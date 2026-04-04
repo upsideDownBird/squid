@@ -6,6 +6,7 @@ import { SkillLoader } from '../skills/loader';
 import { ToolRegistry } from '../tools/registry';
 import { ExpertManager } from '../experts/manager';
 import { ConversationManager } from '../conversation/manager';
+import type { Message as ConversationMessage } from '../conversation/manager';
 import { MemoryManager } from '../memory/manager';
 import type { MemoryCreateInput, MemoryUpdateInput } from '../memory/types';
 import { saveMemoryTool } from '../tools/save-memory';
@@ -20,6 +21,13 @@ import { CronListTool } from '../tools/cron-list';
 import { SkillTool } from '../tools/skill';
 import { BriefTool } from '../tools/brief';
 import { AgentTool } from '../tools/agent';
+import { TencentSkillHubClient } from '../skills/tencent-skillhub-client';
+import { installTencentSkillHubSkill } from '../skills/tencent-skillhub-installer';
+import { getTencentSkillHubInstallStatus, readTencentSkillHubLockfile } from '../skills/tencent-skillhub-metadata';
+import type {
+  TencentSkillHubCatalogResponse,
+  TencentSkillHubInstallResult
+} from '../skills/tencent-skillhub-types';
 
 export interface TaskRequest {
   mode: TaskMode;
@@ -48,6 +56,16 @@ export interface TaskListItem {
   createdAt: string;
   workspace: string;
   expertId?: string;
+}
+
+export interface ThreadListItem {
+  id: string;
+  title: string;
+  preview: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  workspace?: string;
 }
 
 export class TaskAPI {
@@ -89,6 +107,42 @@ export class TaskAPI {
     // 初始化对话管理器和记忆管理器
     this.conversationManager.init();
     this.memoryManager.init();
+
+    // Fire-and-forget self-healing: restore installed SkillHub files if lock exists.
+    this.repairTencentInstalledSkills().catch((error) => {
+      console.warn('[SkillHub] repair skipped:', error?.message || error);
+    });
+  }
+
+  private async repairTencentInstalledSkills(): Promise<void> {
+    const { access } = await import('fs/promises');
+    const { join } = await import('path');
+    const { homedir } = await import('os');
+
+    const lockfile = await readTencentSkillHubLockfile();
+    const entries = Object.entries(lockfile.skills || {});
+    if (!entries.length) return;
+
+    const hubConfig = await this.getTencentSkillHubConfig();
+    for (const [slug, item] of entries) {
+      const nestedPath = join(homedir(), '.jobopx', 'skills', slug, 'SKILL.md');
+      const flatPath = join(homedir(), '.jobopx', 'skills', `${slug}.md`);
+      const exists = await Promise.all([
+        access(nestedPath).then(() => true).catch(() => false),
+        access(flatPath).then(() => true).catch(() => false),
+      ]);
+      if (exists[0] || exists[1]) continue;
+
+      const restored = await installTencentSkillHubSkill({
+        slug,
+        version: item.version || undefined,
+        force: true,
+        config: hubConfig
+      });
+      if (!restored.success) {
+        console.warn(`[SkillHub] restore failed for ${slug}: ${restored.error || 'unknown'}`);
+      }
+    }
   }
 
   async listTasks(): Promise<TaskListItem[]> {
@@ -102,7 +156,7 @@ export class TaskAPI {
     return Array.from(skills.values()).map(skill => ({
       name: skill.metadata.name,
       description: skill.metadata.description,
-      effort: skill.metadata.effort
+      effort: skill.metadata.effort || 'medium'
     }));
   }
 
@@ -252,6 +306,212 @@ user-invocable: true
     }
   }
 
+  private async getTencentSkillHubConfig(): Promise<{
+    baseUrl: string;
+    token?: string;
+    indexUrl?: string;
+    searchUrl?: string;
+    primaryDownloadUrlTemplate?: string;
+    fallbackDownloadUrlTemplate?: string;
+  }> {
+    const config = await this.getModelConfig();
+    const skillHubConfig = (config?.skillhub?.tencent || config?.tencentSkillHub || {}) as any;
+    const defaultBaseUrl = 'https://lightmake.site/api/v1';
+    const defaultIndexUrl = 'https://skillhub-1388575217.cos.ap-guangzhou.myqcloud.com/skills.json';
+    const defaultSearchUrl = 'https://lightmake.site/api/v1/search';
+    const defaultPrimaryDownloadTemplate = 'https://lightmake.site/api/v1/download?slug={slug}';
+    const defaultFallbackDownloadTemplate = 'https://skillhub-1388575217.cos.ap-guangzhou.myqcloud.com/skills/{slug}.zip';
+    return {
+      baseUrl: skillHubConfig.baseUrl || process.env.TENCENT_SKILLHUB_BASE_URL || defaultBaseUrl,
+      token: skillHubConfig.token || process.env.TENCENT_SKILLHUB_TOKEN || undefined,
+      indexUrl: skillHubConfig.indexUrl || process.env.TENCENT_SKILLHUB_INDEX_URL || defaultIndexUrl,
+      searchUrl: skillHubConfig.searchUrl || process.env.TENCENT_SKILLHUB_SEARCH_URL || defaultSearchUrl,
+      primaryDownloadUrlTemplate:
+        skillHubConfig.primaryDownloadUrlTemplate ||
+        process.env.TENCENT_SKILLHUB_PRIMARY_DOWNLOAD_URL_TEMPLATE ||
+        defaultPrimaryDownloadTemplate,
+      fallbackDownloadUrlTemplate:
+        skillHubConfig.fallbackDownloadUrlTemplate ||
+        process.env.TENCENT_SKILLHUB_FALLBACK_DOWNLOAD_URL_TEMPLATE ||
+        defaultFallbackDownloadTemplate,
+    };
+  }
+
+  async listTencentSkillHubSkills(query?: string, limit: number = 20): Promise<TencentSkillHubCatalogResponse> {
+    try {
+      const hubConfig = await this.getTencentSkillHubConfig();
+      const client = new TencentSkillHubClient(hubConfig);
+      const lockfile = await readTencentSkillHubLockfile();
+      const skills = await client.listSkills({ query, limit });
+      const catalog = skills.map(skill => {
+        const { status, installedVersion } = getTencentSkillHubInstallStatus({
+          lockfile,
+          slug: skill.slug,
+          latestVersion: skill.latestVersion
+        });
+        return {
+          ...skill,
+          installStatus: status,
+          installedVersion
+        };
+      });
+      return {
+        success: true,
+        skills: catalog,
+        total: catalog.length
+      };
+    } catch (error: any) {
+      const rawMessage = error?.message || String(error);
+      const message = rawMessage.includes('SkillHub 返回了 HTML 页面')
+        ? rawMessage
+        : `腾讯 SkillHub 加载失败：${rawMessage}`;
+      return {
+        success: false,
+        skills: [],
+        total: 0,
+        error: message
+      };
+    }
+  }
+
+  async installTencentSkillHubSkill(
+    params: { slug: string; version?: string; force?: boolean }
+  ): Promise<TencentSkillHubInstallResult> {
+    const hubConfig = await this.getTencentSkillHubConfig();
+    return await installTencentSkillHubSkill({
+      slug: params.slug,
+      version: params.version,
+      force: params.force,
+      config: hubConfig
+    });
+  }
+
+  async listTencentInstalledSkills(): Promise<{
+    success: boolean;
+    skills: Array<{ slug: string; version: string; installedAt: number; name?: string; description?: string }>;
+    error?: string;
+  }> {
+    try {
+      const { readFile } = await import('fs/promises');
+      const { join } = await import('path');
+      const { homedir } = await import('os');
+      const lockfile = await readTencentSkillHubLockfile();
+      const skills = await Promise.all(
+        Object.entries(lockfile.skills || {}).map(async ([slug, item]) => {
+          const skillPath = join(homedir(), '.jobopx', 'skills', slug, 'SKILL.md');
+          let name = slug;
+          let description = '';
+          try {
+            const content = await readFile(skillPath, 'utf-8');
+            name = content.match(/^\s*name:\s*(.+)$/m)?.[1]?.trim() || slug;
+            description = content.match(/^\s*description:\s*(.+)$/m)?.[1]?.trim() || '';
+          } catch {
+            // fallback to slug when local skill content missing
+          }
+          return {
+            slug,
+            version: item.version || '',
+            installedAt: Number(item.installedAt || 0),
+            name,
+            description,
+          };
+        })
+      );
+      skills.sort((a, b) => b.installedAt - a.installedAt);
+      return { success: true, skills };
+    } catch (error: any) {
+      return {
+        success: false,
+        skills: [],
+        error: error?.message || String(error),
+      };
+    }
+  }
+
+  async getTencentInstalledSkillDetail(slug: string): Promise<{
+    success: boolean;
+    skill?: {
+      slug: string;
+      version?: string;
+      installedAt?: number;
+      content?: string;
+      title?: string;
+      description?: string;
+    };
+    error?: string;
+  }> {
+    const normalized = String(slug || '').trim().toLowerCase();
+    if (!normalized || !/^[a-z0-9-]+$/.test(normalized)) {
+      return { success: false, error: `Invalid slug: ${slug}` };
+    }
+    try {
+      const { readFile } = await import('fs/promises');
+      const { join } = await import('path');
+      const { homedir } = await import('os');
+      const skillPath = join(homedir(), '.jobopx', 'skills', normalized, 'SKILL.md');
+      const content = await readFile(skillPath, 'utf-8');
+      const lockfile = await readTencentSkillHubLockfile();
+      const meta = lockfile.skills?.[normalized];
+      const title = content.match(/^\s*name:\s*(.+)$/m)?.[1]?.trim() || normalized;
+      const description = content.match(/^\s*description:\s*(.+)$/m)?.[1]?.trim() || '';
+      return {
+        success: true,
+        skill: {
+          slug: normalized,
+          version: meta?.version,
+          installedAt: meta?.installedAt,
+          content,
+          title,
+          description,
+        }
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || String(error),
+      };
+    }
+  }
+
+  async uninstallTencentInstalledSkill(slug: string): Promise<{
+    success: boolean;
+    slug: string;
+    error?: string;
+  }> {
+    const normalized = String(slug || '').trim().toLowerCase();
+    if (!normalized || !/^[a-z0-9-]+$/.test(normalized)) {
+      return { success: false, slug: normalized || slug, error: `Invalid slug: ${slug}` };
+    }
+    try {
+      const { rm } = await import('fs/promises');
+      const { join } = await import('path');
+      const { homedir } = await import('os');
+
+      const skillDir = join(homedir(), '.jobopx', 'skills', normalized);
+      const flatSkillFile = join(homedir(), '.jobopx', 'skills', `${normalized}.md`);
+      await rm(skillDir, { recursive: true, force: true });
+      await rm(flatSkillFile, { force: true });
+
+      const lockfile = await readTencentSkillHubLockfile();
+      if (lockfile.skills?.[normalized]) {
+        delete lockfile.skills[normalized];
+        const { writeTencentSkillHubLockfile } = await import('../skills/tencent-skillhub-metadata');
+        await writeTencentSkillHubLockfile(lockfile);
+      }
+
+      const originPath = join(homedir(), '.jobopx', 'skillhub', 'tencent', 'origins', `${normalized}.json`);
+      await rm(originPath, { force: true });
+
+      return { success: true, slug: normalized };
+    } catch (error: any) {
+      return {
+        success: false,
+        slug: normalized,
+        error: error?.message || String(error),
+      };
+    }
+  }
+
   async executeTask(request: TaskRequest): Promise<TaskResponse> {
     try {
       console.log('Executing task:', request);
@@ -285,12 +545,21 @@ user-invocable: true
       // Update task status
       const task = this.tasks.get(taskId);
       if (task) {
-        task.status = 'completed';
+        task.status = result.error ? 'failed' : 'completed';
+      }
+
+      if (result.error) {
+        return {
+          success: false,
+          error: result.error,
+          output: result.output,
+          files: result.files || []
+        };
       }
 
       return {
         success: true,
-        output: JSON.stringify(result, null, 2),
+        output: result.output,
         files: result.files || []
       };
     } catch (error: any) {
@@ -332,6 +601,8 @@ user-invocable: true
       if (!conversationId) {
         conversationId = await this.conversationManager.createConversation(request.workspace);
         this.currentConversationId = conversationId;
+      } else if (request.workspace) {
+        await this.conversationManager.setConversationWorkspace(conversationId, request.workspace);
       }
 
       // 添加用户消息到对话历史
@@ -477,6 +748,76 @@ user-invocable: true
       return [];
     } catch (error: any) {
       return [];
+    }
+  }
+
+  async startNewThread(): Promise<{ success: boolean }> {
+    this.currentConversationId = null;
+    return { success: true };
+  }
+
+  async listThreads(): Promise<{ success: boolean; threads: ThreadListItem[]; error?: string }> {
+    try {
+      const conversations = await this.conversationManager.listConversations();
+      const threads = conversations
+        .filter((conversation) => conversation.messages.length > 0)
+        .map((conversation) => {
+          const firstUserMessage = conversation.messages.find((message) => message.role === 'user');
+          const preview = firstUserMessage?.content?.trim() || '新线程';
+          const shortPreview = preview.length > 80 ? `${preview.slice(0, 80)}...` : preview;
+          return {
+            id: conversation.id,
+            title: shortPreview || '新线程',
+            preview: shortPreview || '新线程',
+            createdAt: conversation.createdAt,
+            updatedAt: conversation.updatedAt,
+            messageCount: conversation.messages.length,
+            workspace: conversation.workspace,
+          } satisfies ThreadListItem;
+        })
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+      return { success: true, threads };
+    } catch (error: any) {
+      return {
+        success: false,
+        threads: [],
+        error: error?.message || String(error),
+      };
+    }
+  }
+
+  async switchThread(threadId: string): Promise<{
+    success: boolean;
+    threadId?: string;
+    messages?: ConversationMessage[];
+    workspace?: string;
+    error?: string;
+  }> {
+    const id = String(threadId || '').trim();
+    if (!id) {
+      return { success: false, error: 'threadId is required' };
+    }
+
+    try {
+      let conversation = this.conversationManager.getConversation(id);
+      if (!conversation) {
+        conversation = await this.conversationManager.loadConversation(id);
+      }
+      const messages = conversation?.messages || [];
+
+      this.currentConversationId = id;
+      return {
+        success: true,
+        threadId: id,
+        messages,
+        workspace: conversation?.workspace,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || String(error),
+      };
     }
   }
 
@@ -685,6 +1026,91 @@ user-invocable: true
       await writeFile(configPath, JSON.stringify(existingConfig, null, 2), 'utf-8');
 
       return { success: true };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async pickDirectory(): Promise<{
+    success: boolean;
+    path?: string;
+    cancelled?: boolean;
+    error?: string;
+  }> {
+    try {
+      const { platform } = await import('os');
+      const { spawnSync } = await import('child_process');
+
+      const currentPlatform = platform();
+      if (currentPlatform === 'darwin') {
+        const result = spawnSync(
+          'osascript',
+          ['-e', 'POSIX path of (choose folder with prompt "请选择工作目录")'],
+          { encoding: 'utf-8' }
+        );
+
+        if (result.status === 0) {
+          const pickedPath = (result.stdout || '').trim();
+          if (pickedPath) {
+            return { success: true, path: pickedPath };
+          }
+        }
+
+        const errorText = `${result.stderr || ''} ${result.stdout || ''}`;
+        if (errorText.includes('-128')) {
+          return { success: false, cancelled: true };
+        }
+        return { success: false, error: (result.stderr || '目录选择失败').trim() };
+      }
+
+      if (currentPlatform === 'win32') {
+        const result = spawnSync(
+          'powershell',
+          [
+            '-NoProfile',
+            '-Command',
+            "Add-Type -AssemblyName System.Windows.Forms; $dialog = New-Object System.Windows.Forms.FolderBrowserDialog; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.SelectedPath }"
+          ],
+          { encoding: 'utf-8' }
+        );
+
+        if (result.status === 0) {
+          const pickedPath = (result.stdout || '').trim();
+          if (pickedPath) {
+            return { success: true, path: pickedPath };
+          }
+          return { success: false, cancelled: true };
+        }
+        return { success: false, error: (result.stderr || '目录选择失败').trim() };
+      }
+
+      // Linux fallback: try zenity first, then kdialog.
+      const result = spawnSync(
+        'bash',
+        ['-lc', 'if command -v zenity >/dev/null 2>&1; then zenity --file-selection --directory; elif command -v kdialog >/dev/null 2>&1; then kdialog --getexistingdirectory; else exit 127; fi'],
+        { encoding: 'utf-8' }
+      );
+
+      if (result.status === 0) {
+        const pickedPath = (result.stdout || '').trim();
+        if (pickedPath) {
+          return { success: true, path: pickedPath };
+        }
+        return { success: false, cancelled: true };
+      }
+
+      if (result.status === 127) {
+        return { success: false, error: '当前系统缺少目录选择器（请安装 zenity 或 kdialog）' };
+      }
+
+      const output = `${result.stderr || ''} ${result.stdout || ''}`.toLowerCase();
+      if (output.includes('cancel')) {
+        return { success: false, cancelled: true };
+      }
+      return { success: false, error: (result.stderr || '目录选择失败').trim() };
     } catch (error: any) {
       return {
         success: false,

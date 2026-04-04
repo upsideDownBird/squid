@@ -497,12 +497,54 @@
       padding: 12px 16px;
       border-radius: 12px;
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.72;
       color: #1a1a1a;
+      max-width: min(860px, 100%);
+      word-break: break-word;
     }
     .message.user .message-content {
       background: #1a1a1a;
       color: white;
+    }
+    .message-content p {
+      margin: 0 0 10px;
+    }
+    .message-content p:last-child {
+      margin-bottom: 0;
+    }
+    .message-content h1,
+    .message-content h2,
+    .message-content h3 {
+      margin: 12px 0 8px;
+      line-height: 1.35;
+      letter-spacing: -0.2px;
+    }
+    .message-content h1 {
+      font-size: 18px;
+    }
+    .message-content h2 {
+      font-size: 16px;
+    }
+    .message-content h3 {
+      font-size: 15px;
+    }
+    .message-content ul,
+    .message-content ol {
+      margin: 6px 0 10px;
+      padding-left: 22px;
+    }
+    .message-content li {
+      margin: 4px 0;
+    }
+    .message-content code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.5px;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+    .message.user .message-content code {
+      background: rgba(255, 255, 255, 0.12);
     }
     .message-content pre {
       background: rgba(0, 0, 0, 0.05);
@@ -511,6 +553,13 @@
       margin: 8px 0;
       overflow-x: auto;
       font-size: 13px;
+      line-height: 1.55;
+    }
+    .message-content pre code {
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      font-size: inherit;
     }
     .message.user .message-content pre {
       background: rgba(255, 255, 255, 0.1);
@@ -603,6 +652,391 @@
       padding: 0;
       width: 100%;
     }
+    .skillhub-market {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      margin-top: 12px;
+    }
+    .skills-installed {
+      margin-bottom: 12px;
+      border: 1px solid #ececec;
+      border-radius: 14px;
+      background: #fff;
+      padding: 16px;
+    }
+    .skills-installed-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .skills-installed-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .skills-installed-count {
+      font-size: 12px;
+      color: #5f6368;
+      background: #f2f4f7;
+      border-radius: 999px;
+      padding: 3px 9px;
+    }
+    .skills-installed-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .skills-installed-item {
+      border: 1px solid #eceff3;
+      background: #fbfcfe;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .skills-installed-item h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .skills-installed-item p {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: #667085;
+      line-height: 1.45;
+    }
+    .skillhub-hero {
+      font-size: 42px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 18px;
+      color: #111;
+      letter-spacing: -0.6px;
+    }
+    .skillhub-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .skillhub-search-wrap {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    .skillhub-search-wrap i,
+    .skillhub-search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      width: 14px;
+      height: 14px;
+    }
+    .skillhub-search-input {
+      width: 100%;
+      border: 1px solid #e7e7e7;
+      border-radius: 999px;
+      padding: 10px 14px 10px 34px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fff;
+    }
+    .skillhub-search-input:focus {
+      border-color: #cfcfcf;
+    }
+    .skillhub-filter {
+      min-width: 120px;
+      border: 1px solid #e7e7e7;
+      border-radius: 999px;
+      padding: 10px 30px 10px 14px;
+      font-size: 13px;
+      background: #fff;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      cursor: pointer;
+    }
+    .skillhub-filter-wrap {
+      position: relative;
+      min-width: 120px;
+    }
+    .skillhub-filter-wrap i,
+    .skillhub-filter-wrap svg {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      color: #8b8b8b;
+      pointer-events: none;
+    }
+    .skillhub-search-btn {
+      height: 40px;
+      border-radius: 999px;
+      padding: 0 16px;
+      white-space: nowrap;
+    }
+    .skillhub-feedback {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .skillhub-feedback.success {
+      display: block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #c8e6c9;
+    }
+    .skillhub-feedback.error {
+      display: block;
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+    }
+    .skillhub-section-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 4px 0 10px;
+    }
+    .skillhub-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(320px, 1fr));
+      gap: 8px 22px;
+    }
+    .skillhub-subsection {
+      margin-top: 10px;
+    }
+    .skillhub-subsection + .skillhub-subsection {
+      margin-top: 18px;
+    }
+    .skillhub-subsection.personal {
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .skillhub-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 12px;
+      padding: 10px 8px;
+      transition: background 0.2s ease;
+      border: 1px solid transparent;
+    }
+    .skillhub-item:hover {
+      background: #f8f8f8;
+      border-color: #efefef;
+    }
+    .skillhub-item-main {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 10px;
+    }
+    .skillhub-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #cde2ff, #e9f2ff);
+      color: #1f4f8c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      border: 1px solid #dfe9ff;
+    }
+    .skillhub-icon.alt-1 { background: linear-gradient(135deg, #ffe8d5, #fff4ea); color: #9a5b24; border-color: #ffddb8; }
+    .skillhub-icon.alt-2 { background: linear-gradient(135deg, #e2f7e9, #f2fff6); color: #2f7f52; border-color: #cbeed8; }
+    .skillhub-icon.alt-3 { background: linear-gradient(135deg, #f2e8ff, #faf3ff); color: #6e3ea0; border-color: #e5d5f8; }
+    .skillhub-icon-image {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      object-fit: cover;
+      display: block;
+    }
+    .skillhub-text {
+      min-width: 0;
+    }
+    .skillhub-name {
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 1.2;
+      color: #171717;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+    .skillhub-desc {
+      font-size: 13px;
+      color: #6d6d6d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 280px;
+    }
+    .skillhub-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+    .skillhub-status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f1f1f1;
+      color: #666;
+      white-space: nowrap;
+    }
+    .skillhub-status.installed {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .skillhub-status.updatable {
+      background: #fff3e0;
+      color: #ef6c00;
+    }
+    .skillhub-install-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid #e2e2e2;
+      background: #fff;
+      color: #111;
+      font-size: 20px;
+      line-height: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .skillhub-install-btn:hover {
+      background: #f2f2f2;
+    }
+    .skillhub-install-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+    .skillhub-empty {
+      padding: 18px 4px;
+      color: #999;
+      text-align: center;
+      border-top: 1px solid #f0f0f0;
+    }
+    @media (max-width: 1240px) {
+      .skillhub-list {
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 8px 12px;
+      }
+      .skillhub-name {
+        font-size: 15px;
+      }
+      .skillhub-desc {
+        max-width: 220px;
+      }
+    }
+    @media (max-width: 980px) {
+      .skillhub-toolbar {
+        gap: 8px;
+      }
+      .skillhub-search-wrap {
+        flex: 1 1 100%;
+      }
+      .skillhub-filter-wrap {
+        min-width: 100px;
+      }
+      .skillhub-search-btn {
+        margin-left: auto;
+      }
+      .skillhub-list {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .skillhub-item {
+        padding: 9px 6px;
+      }
+      .skillhub-name {
+        font-size: 14px;
+      }
+      .skillhub-desc {
+        font-size: 12px;
+        max-width: 100%;
+      }
+      .skillhub-status {
+        display: none;
+      }
+    }
+    .skillhub-check-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid #dfe5df;
+      color: #4caf50;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .skillhub-check-btn:hover {
+      background: #f5fbf5;
+    }
+    .skillhub-detail-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .skillhub-detail-card {
+      width: min(860px, 92vw);
+      max-height: 88vh;
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid #e9e9e9;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .skillhub-detail-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .skillhub-detail-body {
+      padding: 14px 16px;
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #444;
+      white-space: pre-wrap;
+    }
+    .skillhub-detail-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -662,7 +1096,7 @@
 <body>
   <div class="sidebar">
     <div class="sidebar-nav">
-      <a href="#" class="nav-item active" data-page="task">
+      <a href="#" class="nav-item active" data-page="task" id="newThreadNav">
         <i data-lucide="edit-3" class="nav-item-icon"></i>
         <span>新线程</span>
       </a>
@@ -700,8 +1134,8 @@
 
     <div class="task-list" id="taskList">
       <div class="task-item">
-        <div class="task-title">暂无任务</div>
-        <div class="task-meta">开始创建你的第一个任务</div>
+        <div class="task-title">暂无线程</div>
+        <div class="task-meta">开始创建你的第一个线程</div>
       </div>
     </div>
   </div>
@@ -789,6 +1223,16 @@
                 <option value="plan">Plan</option>
               </select>
               <input type="text" id="workspace" class="option-btn" placeholder="工作目录" value="/tmp/jobopx-test" style="width: 200px;">
+              <button
+                type="button"
+                id="workspacePickerBtn"
+                class="option-btn"
+                onclick="pickWorkspacePath()"
+                title="选择本机路径"
+                style="width: 36px; display: inline-flex; align-items: center; justify-content: center;"
+              >
+                <i data-lucide="folder-open" style="width: 14px; height: 14px;"></i>
+              </button>
             </div>
             <button class="submit-btn" id="runBtn" onclick="runTask()">
               <i data-lucide="arrow-up"></i>
@@ -866,9 +1310,37 @@
             </div>
           </div>
 
-          <div id="skillsList">
-            <h3 style="margin-bottom: 16px;">已安装的技能</h3>
-            <div id="skillsGrid" class="grid"></div>
+          <div id="tencentSkillHubList" class="skillhub-market">
+            <div id="skillhubFeedback" class="skillhub-feedback"></div>
+            <div class="skillhub-toolbar">
+              <div class="skillhub-search-wrap">
+                <i data-lucide="search"></i>
+                <input
+                  type="text"
+                  id="tencentSkillHubQuery"
+                  class="skillhub-search-input"
+                  placeholder="搜索 SkillHub 技能"
+                />
+              </div>
+              <div class="skillhub-filter-wrap">
+                <select id="tencentSkillHubFilter" class="skillhub-filter">
+                  <option value="all">全部</option>
+                  <option value="not_installed">未安装</option>
+                  <option value="installed">已安装</option>
+                  <option value="updatable">可更新</option>
+                </select>
+                <i data-lucide="chevron-down"></i>
+              </div>
+              <button class="btn btn-secondary skillhub-search-btn" onclick="loadTencentSkillHubSkills()">搜索</button>
+            </div>
+            <div class="skillhub-subsection">
+              <div class="skillhub-section-title">推荐</div>
+              <div id="tencentSkillHubRecommendedGrid" class="skillhub-list"></div>
+            </div>
+            <div class="skillhub-subsection personal">
+              <div class="skillhub-section-title" style="font-size: 20px;">个人</div>
+              <div id="tencentSkillHubInstalledGrid" class="skillhub-list"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1106,7 +1578,13 @@
     // Task list management
     let tasks = [];
     let currentTaskId = null;
+    let currentThreadId = null;
     let skills = [];
+    let tencentSkillHubSkills = [];
+    let tencentSkillHubRecommendedSkills = [];
+    let tencentSkillHubInstalledSkills = [];
+    let tencentSkillHubInstalledMap = {};
+    const skillhubActionLocks = new Set();
     let experts = [];
     let selectedExpert = '';
     let selectedSkill = '';
@@ -1180,6 +1658,290 @@
         }
       } catch (error) {
         console.error('Failed to load skills:', error);
+      }
+    }
+
+    async function loadTencentSkillHubSkills() {
+      const query = (document.getElementById('tencentSkillHubQuery')?.value || '').trim();
+      const filter = (document.getElementById('tencentSkillHubFilter')?.value || 'all').trim();
+      const recommendedGrid = document.getElementById('tencentSkillHubRecommendedGrid');
+      const installedGrid = document.getElementById('tencentSkillHubInstalledGrid');
+      if (!recommendedGrid || !installedGrid) return;
+      recommendedGrid.innerHTML = '<div class="skillhub-empty" style="grid-column: 1 / -1;">加载中...</div>';
+      installedGrid.innerHTML = '<div class="skillhub-empty" style="grid-column: 1 / -1;">加载中...</div>';
+      try {
+        const url = new URL('http://localhost:50001/api/skillhub/tencent/skills');
+        if (query) {
+          url.searchParams.set('query', query);
+        }
+        url.searchParams.set('limit', '20');
+        const [catalogResponse, installedResponse] = await Promise.all([
+          fetch(url.toString()),
+          fetch('http://localhost:50001/api/skillhub/tencent/installed')
+        ]);
+        const result = await catalogResponse.json();
+        const installedResult = await installedResponse.json();
+        if (!result.success) {
+          recommendedGrid.innerHTML = `<div class="skillhub-empty" style="grid-column: 1 / -1; color:#d93025;">加载失败: ${escapeHtml(result.error || '未知错误')}</div>`;
+          if (installedResult?.success && Array.isArray(installedResult.skills) && installedResult.skills.length > 0) {
+            tencentSkillHubInstalledSkills = installedResult.skills.map((item) => ({
+              slug: item.slug,
+              name: item.slug,
+              description: '',
+              latestVersion: item.version || '',
+              installedVersion: item.version || '',
+              installStatus: 'installed'
+            }));
+            renderTencentSkillHubSkills();
+          } else {
+            installedGrid.innerHTML = '<div class="skillhub-empty" style="grid-column: 1 / -1;">暂无已安装技能</div>';
+          }
+          return;
+        }
+        tencentSkillHubSkills = (result.skills || []).filter((item) => {
+          if (filter === 'all') return true;
+          return item.installStatus === filter;
+        });
+        const installedList = installedResult?.success && Array.isArray(installedResult.skills)
+          ? installedResult.skills
+          : [];
+        tencentSkillHubInstalledMap = Object.fromEntries(
+          installedList.map((item) => [item.slug, item])
+        );
+        const mergedAll = tencentSkillHubSkills.map((item) => {
+          const local = tencentSkillHubInstalledMap[item.slug];
+          if (!local) return item;
+          return {
+            ...item,
+            installStatus: 'installed',
+            installedVersion: local.version || item.installedVersion || '',
+          };
+        });
+        tencentSkillHubRecommendedSkills = mergedAll
+          .filter((item) => item.installStatus === 'not_installed')
+          .slice(0, 10);
+        const mergedInstalled = installedList.map((item) => {
+          const fromCatalog = mergedAll.find((x) => x.slug === item.slug);
+          return {
+            ...(fromCatalog || {}),
+            slug: item.slug,
+            name: item.name || fromCatalog?.name || item.slug,
+            description: item.description || fromCatalog?.description || '',
+            latestVersion: fromCatalog?.latestVersion || item.version || '',
+            installedVersion: item.version || fromCatalog?.installedVersion || '',
+            installStatus: 'installed'
+          };
+        });
+        tencentSkillHubInstalledSkills = mergedInstalled;
+        renderTencentSkillHubSkills();
+      } catch (error) {
+        recommendedGrid.innerHTML = `<div class="skillhub-empty" style="grid-column: 1 / -1; color:#d93025;">加载失败: ${escapeHtml(error.message || '未知错误')}</div>`;
+        installedGrid.innerHTML = '<div class="skillhub-empty" style="grid-column: 1 / -1;">暂无已安装技能</div>';
+      }
+    }
+
+    function renderSkillhubItem(skill, options = {}) {
+      const { installed = false } = options;
+      const statusTag = skill.installStatus === 'installed'
+        ? '<span class="skillhub-status installed">已安装</span>'
+        : skill.installStatus === 'updatable'
+          ? `<span class="skillhub-status updatable">可更新 ${escapeHtml(skill.installedVersion || '')} → ${escapeHtml(skill.latestVersion || '')}</span>`
+          : '<span class="skillhub-status">未安装</span>';
+      const iconText = escapeHtml((skill.name || skill.slug || 'S').slice(0, 2).toUpperCase());
+      const iconVariant = (skill.slug || skill.name || '').length % 4;
+      const iconUrl = String(skill.iconUrl || skill.icon || skill.logo || skill.avatar || skill.avatarUrl || '').trim();
+      const iconContent = iconUrl
+        ? `<img class="skillhub-icon-image" src="${escapeHtml(iconUrl)}" alt="${escapeHtml(skill.name || skill.slug)}" />`
+        : iconText;
+      const encodedSlug = encodeURIComponent(String(skill.slug || ''));
+
+      return `
+        <div class="skillhub-item" ${installed ? `onclick="openTencentInstalledSkillDetail(decodeURIComponent('${encodedSlug}'))"` : ''}>
+          <div class="skillhub-item-main">
+            <div class="skillhub-icon alt-${iconVariant}">${iconContent}</div>
+            <div class="skillhub-text">
+              <div class="skillhub-name">${escapeHtml(skill.name || skill.slug)}</div>
+              <div class="skillhub-desc">${escapeHtml(skill.description || '')}</div>
+            </div>
+          </div>
+          <div class="skillhub-actions">
+            ${statusTag}
+            ${installed
+              ? `<button class="skillhub-check-btn" title="已安装" onclick="event.stopPropagation(); openTencentInstalledSkillDetail(decodeURIComponent('${encodedSlug}'));">✓</button>`
+              : `<button class="skillhub-install-btn" title="安装 ${escapeHtml(skill.name || skill.slug)}" onclick="installTencentSkillHubSkill(decodeURIComponent('${encodedSlug}'), this)">+</button>`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTencentSkillHubSkills() {
+      const recommendedGrid = document.getElementById('tencentSkillHubRecommendedGrid');
+      const installedGrid = document.getElementById('tencentSkillHubInstalledGrid');
+      if (!recommendedGrid || !installedGrid) return;
+
+      if (!tencentSkillHubRecommendedSkills.length) {
+        recommendedGrid.innerHTML = '<div class="skillhub-empty" style="grid-column: 1 / -1;">暂无推荐技能</div>';
+      } else {
+        recommendedGrid.innerHTML = tencentSkillHubRecommendedSkills.map(skill => renderSkillhubItem(skill, { installed: false })).join('');
+      }
+
+      if (!tencentSkillHubInstalledSkills.length) {
+        installedGrid.innerHTML = '<div class="skillhub-empty" style="grid-column: 1 / -1;">暂无已安装技能</div>';
+      } else {
+        installedGrid.innerHTML = tencentSkillHubInstalledSkills.map(skill => renderSkillhubItem(skill, { installed: true })).join('');
+      }
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    function setSkillhubFeedback(message, type = 'success') {
+      const el = document.getElementById('skillhubFeedback');
+      if (!el) return;
+      if (!message) {
+        el.textContent = '';
+        el.className = 'skillhub-feedback';
+        return;
+      }
+      el.textContent = message;
+      el.className = `skillhub-feedback ${type}`;
+      setTimeout(() => {
+        if (el.textContent === message) {
+          el.textContent = '';
+          el.className = 'skillhub-feedback';
+        }
+      }, 3200);
+    }
+
+    function closeSkillhubDetailModal() {
+      const modal = document.getElementById('skillhubDetailModal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+
+    async function installTencentSkillHubSkill(slug, buttonEl) {
+      if (!slug) return;
+      const lockKey = `install:${slug}`;
+      if (skillhubActionLocks.has(lockKey)) return;
+      skillhubActionLocks.add(lockKey);
+      const btn = buttonEl || null;
+      const originalText = btn ? btn.textContent : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '...';
+      }
+      const skill = tencentSkillHubRecommendedSkills.find((item) => item.slug === slug)
+        || tencentSkillHubSkills.find((item) => item.slug === slug);
+      const version = skill?.latestVersion || undefined;
+      try {
+        const response = await fetch('http://localhost:50001/api/skillhub/tencent/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug, version, force: true })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setSkillhubFeedback(`安装成功：${result.slug}@${result.version || ''}`, 'success');
+          await loadSkills();
+          renderSkillsGrid();
+          await loadTencentSkillHubSkills();
+        } else {
+          setSkillhubFeedback(`安装失败：${result.error || '未知错误'}`, 'error');
+        }
+      } catch (error) {
+        setSkillhubFeedback(`安装失败：${error.message || '未知错误'}`, 'error');
+      } finally {
+        skillhubActionLocks.delete(lockKey);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = originalText || '+';
+        }
+      }
+    }
+
+    async function openTencentInstalledSkillDetail(slug) {
+      if (!slug) return;
+      try {
+        const response = await fetch(`http://localhost:50001/api/skillhub/tencent/installed/${encodeURIComponent(slug)}`);
+        const result = await response.json();
+        if (!result.success || !result.skill) {
+          setSkillhubFeedback(`加载详情失败：${result.error || '未知错误'}`, 'error');
+          return;
+        }
+        const skill = result.skill;
+        closeSkillhubDetailModal();
+        const modal = document.createElement('div');
+        modal.id = 'skillhubDetailModal';
+        modal.className = 'skillhub-detail-mask';
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            closeSkillhubDetailModal();
+          }
+        };
+        modal.innerHTML = `
+          <div class="skillhub-detail-card">
+            <div class="skillhub-detail-header">
+              <div>
+                <div style="font-size: 22px; font-weight: 700; color: #111;">${escapeHtml(skill.title || skill.slug || slug)}</div>
+                <div style="margin-top: 4px; font-size: 14px; color: #666;">${escapeHtml(skill.description || '')}</div>
+              </div>
+              <button class="icon-btn" onclick="closeSkillhubDetailModal()" title="关闭">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+            <div class="skillhub-detail-body">${escapeHtml(skill.content || '暂无详情')}</div>
+            <div class="skillhub-detail-footer">
+              <button class="btn btn-secondary" style="color:#d93025;border-color:#f5c2c7;" onclick="uninstallTencentInstalledSkill('${escapeHtml(skill.slug || slug)}', this)">卸载</button>
+              <button class="btn" onclick="closeSkillhubDetailModal()">关闭</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        if (window.lucide) {
+          lucide.createIcons();
+        }
+      } catch (error) {
+        setSkillhubFeedback(`加载详情失败：${error.message || '未知错误'}`, 'error');
+      }
+    }
+
+    async function uninstallTencentInstalledSkill(slug, btnEl) {
+      if (!slug) return;
+      const lockKey = `uninstall:${slug}`;
+      if (skillhubActionLocks.has(lockKey)) return;
+      skillhubActionLocks.add(lockKey);
+      const btn = btnEl || null;
+      const originalText = btn ? btn.textContent : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '卸载中...';
+      }
+      try {
+        const response = await fetch('http://localhost:50001/api/skillhub/tencent/uninstall', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          setSkillhubFeedback(`卸载失败：${result.error || '未知错误'}`, 'error');
+          return;
+        }
+        setSkillhubFeedback(`卸载成功：${slug}`, 'success');
+        closeSkillhubDetailModal();
+        await loadSkills();
+        await loadTencentSkillHubSkills();
+      } catch (error) {
+        setSkillhubFeedback(`卸载失败：${error.message || '未知错误'}`, 'error');
+      } finally {
+        skillhubActionLocks.delete(lockKey);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = originalText || '卸载';
+        }
       }
     }
 
@@ -1258,7 +2020,24 @@
       // Initialize custom selects
       initCustomSelects();
 
+      const skillhubQueryInput = document.getElementById('tencentSkillHubQuery');
+      if (skillhubQueryInput) {
+        skillhubQueryInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            loadTencentSkillHubSkills();
+          }
+        });
+      }
+      const skillhubFilter = document.getElementById('tencentSkillHubFilter');
+      if (skillhubFilter) {
+        skillhubFilter.addEventListener('change', () => {
+          loadTencentSkillHubSkills();
+        });
+      }
+
       loadSkills();
+      loadTencentSkillHubSkills();
       loadExperts();
       refreshTaskList();
       loadModelConfig();
@@ -1438,14 +2217,19 @@
 
     function renderSkillsGrid() {
       const grid = document.getElementById('skillsGrid');
+      if (!grid) return;
+      const countEl = document.getElementById('installedSkillsCount');
+      if (countEl) {
+        countEl.textContent = String(skills.length);
+      }
 
       if (skills.length === 0) {
-        grid.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">暂无技能</div>';
+        grid.innerHTML = '<div class="skillhub-empty" style="grid-column: 1 / -1; border-top: none;">暂无已安装技能</div>';
         return;
       }
 
       grid.innerHTML = skills.map(skill => `
-        <div class="grid-item">
+        <div class="skills-installed-item">
           <h4>${escapeHtml(skill.name)}</h4>
           <p>${escapeHtml(skill.description)}</p>
           <div class="tags">
@@ -1540,80 +2324,97 @@
       }
     }
 
-    // Load tasks from backend
+    // Load threads from backend
     async function refreshTaskList() {
       try {
-        const response = await fetch('http://localhost:50001/api/tasks');
+        const response = await fetch('http://localhost:50001/api/threads');
         if (response.ok) {
-          tasks = await response.json();
+          const result = await response.json();
+          tasks = Array.isArray(result?.threads) ? result.threads : [];
           renderTaskList();
         }
       } catch (error) {
-        console.error('Failed to load tasks:', error);
+        console.error('Failed to load threads:', error);
       }
     }
 
-    // Render task list
+    // Render thread list
     function renderTaskList() {
       const taskList = document.getElementById('taskList');
-      const searchTerm = document.getElementById('taskSearch').value.toLowerCase();
-      const filter = document.getElementById('taskFilter').value;
+      const searchInput = document.getElementById('taskSearch');
+      const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
-      let filteredTasks = tasks.filter(task => {
-        const matchesSearch = task.instruction.toLowerCase().includes(searchTerm) ||
-                             task.mode.toLowerCase().includes(searchTerm);
-        const matchesFilter = filter === 'all' || task.status === filter;
-        return matchesSearch && matchesFilter;
+      const filteredTasks = tasks.filter(task => {
+        if (!searchTerm) return true;
+        const haystack = `${task.title || ''} ${task.preview || ''}`.toLowerCase();
+        return haystack.includes(searchTerm);
       });
 
       if (filteredTasks.length === 0) {
-        taskList.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">暂无任务</div>';
+        taskList.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">暂无线程</div>';
         return;
       }
 
       taskList.innerHTML = filteredTasks.map(task => `
-        <div class="task-item ${task.id === currentTaskId ? 'active' : ''}" onclick="loadTask('${task.id}')">
-          <div class="task-title">${escapeHtml(task.instruction.substring(0, 50))}${task.instruction.length > 50 ? '...' : ''}</div>
+        <div class="task-item ${task.id === currentThreadId ? 'active' : ''}" onclick="loadTask('${task.id}')">
+          <div class="task-title">${escapeHtml(task.title || '新线程')}</div>
           <div class="task-meta">
-            <span class="status ${task.status}">${task.status}</span>
-            ${task.mode} · ${formatTime(task.createdAt)}
-            ${task.expertId ? '<br><span style="font-size: 10px; color: #4CAF50;">👤 ' + task.expertId + '</span>' : ''}
+            ${formatTime(task.updatedAt || task.createdAt)}
+            ${Number(task.messageCount || 0) > 0 ? ' · ' + task.messageCount + ' 条消息' : ''}
           </div>
         </div>
       `).join('');
     }
 
-    // Filter tasks
     function filterTasks() {
       renderTaskList();
     }
 
-    // Load specific task
-    function loadTask(taskId) {
-      currentTaskId = taskId;
-      const task = tasks.find(t => t.id === taskId);
-
-      if (task) {
-        // 显示专家切换器
-        document.getElementById('expertSwitcher').classList.remove('hidden');
-
-        // 填充切换专家下拉框
-        const switchSelect = document.getElementById('switchExpertSelect');
-        switchSelect.innerHTML = '<option value="">无 - 通用助手</option>';
-        experts.forEach(expert => {
-          const option = document.createElement('option');
-          option.value = expert.id;
-          option.textContent = `${expert.name} - ${expert.role}`;
-          if (task.expertId === expert.id) {
-            option.selected = true;
-          }
-          switchSelect.appendChild(option);
+    async function loadTask(taskId) {
+      try {
+        const response = await fetch('http://localhost:50001/api/threads/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threadId: taskId })
         });
-      } else {
-        document.getElementById('expertSwitcher').classList.add('hidden');
-      }
 
-      renderTaskList();
+        const result = await response.json();
+        if (!result.success) {
+          showNotification('线程切换失败: ' + (result.error || '未知错误'), 'error');
+          return;
+        }
+
+        currentThreadId = taskId;
+        currentTaskId = null;
+        renderTaskList();
+        await switchPage('task', { createFreshThread: false });
+
+        const chatContainer = document.getElementById('chatContainer');
+        chatContainer.innerHTML = '';
+
+        applyWorkspaceToInputs(result.workspace);
+
+        const messages = Array.isArray(result.messages) ? result.messages : [];
+        if (messages.length === 0) {
+          chatContainer.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+              <h2>开始构建</h2>
+              <p>在下方输入你的需求，开始创建任务</p>
+            </div>
+          `;
+          return;
+        }
+
+        messages.forEach((message) => {
+          if (message.role === 'user' || message.role === 'assistant') {
+            addMessage(message.role, message.content || '');
+          }
+        });
+      } catch (error) {
+        console.error('Switch thread error:', error);
+        showNotification('线程切换失败: ' + error.message, 'error');
+      }
     }
 
     async function switchExpert() {
@@ -1663,39 +2464,141 @@
       return Math.floor(diff / 86400000) + '天前';
     }
 
+    function applyWorkspaceToInputs(workspace) {
+      const value = (workspace || '').trim();
+      if (!value) return;
+      const workspaceInput = document.getElementById('workspace');
+      const defaultWorkspaceInput = document.getElementById('defaultWorkspace');
+      if (workspaceInput) workspaceInput.value = value;
+      if (defaultWorkspaceInput) defaultWorkspaceInput.value = value;
+    }
+
+    async function pickWorkspacePath() {
+      const pickerBtn = document.getElementById('workspacePickerBtn');
+      const workspaceInput = document.getElementById('workspace');
+      const defaultWorkspaceInput = document.getElementById('defaultWorkspace');
+      if (!pickerBtn || !workspaceInput) return;
+
+      const originalHtml = pickerBtn.innerHTML;
+      pickerBtn.disabled = true;
+      pickerBtn.innerHTML = '<i data-lucide="loader-2" style="width: 14px; height: 14px; animation: spin 1s linear infinite;"></i>';
+      lucide.createIcons();
+
+      try {
+        const response = await fetch('http://localhost:50001/api/system/pick-directory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          if (!result.cancelled) {
+            showNotification('目录选择失败: ' + (result.error || '未知错误'), 'error');
+          }
+          return;
+        }
+
+        workspaceInput.value = result.path;
+        if (defaultWorkspaceInput) {
+          defaultWorkspaceInput.value = result.path;
+        }
+
+        // 同步保存成默认工作目录，避免下次重启还要再选。
+        await fetch('http://localhost:50001/api/config/workspace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspace: result.path })
+        });
+
+        showNotification('工作目录已更新', 'success');
+      } catch (error) {
+        console.error('Pick workspace path error:', error);
+        showNotification('目录选择失败: ' + error.message, 'error');
+      } finally {
+        pickerBtn.disabled = false;
+        pickerBtn.innerHTML = originalHtml;
+        lucide.createIcons();
+      }
+    }
+
+    async function startNewThread() {
+      try {
+        const response = await fetch('http://localhost:50001/api/threads/new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (!result.success) {
+          showNotification('新线程创建失败: ' + (result.error || '未知错误'), 'error');
+          return;
+        }
+
+        currentThreadId = null;
+        currentTaskId = null;
+        renderTaskList();
+
+        const chatContainer = document.getElementById('chatContainer');
+        chatContainer.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+            <h2>开始构建</h2>
+            <p>在下方输入你的需求，开始创建任务</p>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Start new thread error:', error);
+        showNotification('新线程创建失败: ' + error.message, 'error');
+      }
+    }
+
+    async function switchPage(page, options = {}) {
+      const { createFreshThread = false } = options;
+
+      // 更新激活状态
+      document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
+      const activeNav = document.querySelector(`.nav-item[data-page="${page}"]`);
+      if (activeNav) {
+        activeNav.classList.add('active');
+      }
+
+      // 显示对应页面
+      document.querySelectorAll('[id$="-page"]').forEach(p => {
+        p.classList.add('hidden');
+        p.style.display = 'none';
+      });
+      const targetPage = document.getElementById(page + '-page');
+      if (!targetPage) return;
+      targetPage.classList.remove('hidden');
+      targetPage.style.display = 'flex';
+
+      if (page === 'task' && createFreshThread) {
+        await startNewThread();
+      }
+
+      // 如果切换到技能页面，渲染技能列表
+      if (page === 'skills') {
+        renderSkillsGrid();
+        loadTencentSkillHubSkills();
+      }
+
+      // 如果切换到记忆页面，加载记忆列表
+      if (page === 'memory') {
+        loadMemories();
+      }
+
+      // 如果切换到专家页面，渲染专家列表
+      if (page === 'experts') {
+        renderExpertsGrid();
+      }
+    }
+
     // Page switching
     document.querySelectorAll('.nav-item').forEach(link => {
-      link.addEventListener('click', (e) => {
+      link.addEventListener('click', async (e) => {
         e.preventDefault();
         const page = link.dataset.page;
-
-        // 更新激活状态
-        document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
-        link.classList.add('active');
-
-        // 显示对应页面
-        document.querySelectorAll('[id$="-page"]').forEach(p => {
-          p.classList.add('hidden');
-          p.style.display = 'none';
-        });
-        const targetPage = document.getElementById(page + '-page');
-        targetPage.classList.remove('hidden');
-        targetPage.style.display = 'flex';
-
-        // 如果切换到技能页面，渲染技能列表
-        if (page === 'skills') {
-          renderSkillsGrid();
-        }
-
-        // 如果切换到记忆页面，加载记忆列表
-        if (page === 'memory') {
-          loadMemories();
-        }
-
-        // 如果切换到专家页面，渲染专家列表
-        if (page === 'experts') {
-          renderExpertsGrid();
-        }
+        const createFreshThread = page === 'task' && link.id === 'newThreadNav';
+        await switchPage(page, { createFreshThread });
       });
     });
 
@@ -1748,7 +2651,8 @@
             workspace: workspace,
             instruction: instruction,
             skill: skill || undefined,
-            expertId: expertId || undefined
+            expertId: expertId || undefined,
+            conversationId: currentThreadId || undefined
           })
         });
 
@@ -1778,11 +2682,11 @@
                 const parsed = JSON.parse(data);
                 if (parsed.content) {
                   fullText += parsed.content;
-                  assistantContent.textContent = fullText;
+                  renderMessageContent(assistantContent, fullText);
                   // 滚动到底部
                   chatContainer.scrollTop = chatContainer.scrollHeight;
                 } else if (parsed.error) {
-                  assistantContent.textContent = '❌ 错误: ' + parsed.error;
+                  renderMessageContent(assistantContent, '❌ 错误: ' + parsed.error);
                 }
               } catch (e) {
                 // Skip invalid JSON
@@ -1792,7 +2696,15 @@
         }
 
         if (!fullText) {
-          assistantContent.textContent = '❌ 没有收到响应';
+          renderMessageContent(assistantContent, '❌ 没有收到响应');
+        }
+
+        // 如果是新线程第一次发言，自动把当前线程高亮到左侧列表第一项
+        await refreshTaskList();
+        if (!currentThreadId && tasks.length > 0) {
+          currentThreadId = tasks[0].id;
+          applyWorkspaceToInputs(tasks[0].workspace);
+          renderTaskList();
         }
 
         // 更新上下文使用率
@@ -1804,8 +2716,111 @@
         runBtn.disabled = false;
         runBtn.innerHTML = '<i data-lucide="arrow-up"></i>';
         lucide.createIcons();
-        await refreshTaskList();
       }
+    }
+
+    function formatInlineMarkdown(text) {
+      return escapeHtml(text)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+    }
+
+    function renderMarkdownSection(text) {
+      const lines = text.replace(/\r\n/g, '\n').split('\n');
+      const out = [];
+      let inUl = false;
+      let inOl = false;
+
+      const closeLists = () => {
+        if (inUl) {
+          out.push('</ul>');
+          inUl = false;
+        }
+        if (inOl) {
+          out.push('</ol>');
+          inOl = false;
+        }
+      };
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          closeLists();
+          continue;
+        }
+
+        const heading3 = trimmed.match(/^###\s+(.+)$/);
+        if (heading3) {
+          closeLists();
+          out.push(`<h3>${formatInlineMarkdown(heading3[1])}</h3>`);
+          continue;
+        }
+
+        const heading2 = trimmed.match(/^##\s+(.+)$/);
+        if (heading2) {
+          closeLists();
+          out.push(`<h2>${formatInlineMarkdown(heading2[1])}</h2>`);
+          continue;
+        }
+
+        const heading1 = trimmed.match(/^#\s+(.+)$/);
+        if (heading1) {
+          closeLists();
+          out.push(`<h1>${formatInlineMarkdown(heading1[1])}</h1>`);
+          continue;
+        }
+
+        const ulItem = trimmed.match(/^[-*]\s+(.+)$/);
+        if (ulItem) {
+          if (inOl) {
+            out.push('</ol>');
+            inOl = false;
+          }
+          if (!inUl) {
+            out.push('<ul>');
+            inUl = true;
+          }
+          out.push(`<li>${formatInlineMarkdown(ulItem[1])}</li>`);
+          continue;
+        }
+
+        const olItem = trimmed.match(/^\d+\.\s+(.+)$/);
+        if (olItem) {
+          if (inUl) {
+            out.push('</ul>');
+            inUl = false;
+          }
+          if (!inOl) {
+            out.push('<ol>');
+            inOl = true;
+          }
+          out.push(`<li>${formatInlineMarkdown(olItem[1])}</li>`);
+          continue;
+        }
+
+        closeLists();
+        out.push(`<p>${formatInlineMarkdown(trimmed)}</p>`);
+      }
+
+      closeLists();
+      return out.join('');
+    }
+
+    function renderMessageContent(element, content) {
+      if (!content) {
+        element.textContent = '';
+        return;
+      }
+
+      const segments = content.split(/```([\s\S]*?)```/g);
+      const html = segments.map((segment, index) => {
+        if (index % 2 === 1) {
+          return `<pre><code>${escapeHtml(segment.trim())}</code></pre>`;
+        }
+        return renderMarkdownSection(segment);
+      }).join('');
+
+      element.innerHTML = html || `<p>${escapeHtml(content)}</p>`;
     }
 
     // 添加消息到聊天容器
@@ -1827,23 +2842,7 @@
       const messageContent = document.createElement('div');
       messageContent.className = 'message-content';
 
-      // 处理内容格式
-      if (content.includes('\n') || content.includes('{')) {
-        const parts = content.split(/```/);
-        if (parts.length > 1) {
-          // 有代码块
-          messageContent.innerHTML = parts.map((part, i) => {
-            if (i % 2 === 1) {
-              return `<pre>${escapeHtml(part)}</pre>`;
-            }
-            return escapeHtml(part).replace(/\n/g, '<br>');
-          }).join('');
-        } else {
-          messageContent.innerHTML = escapeHtml(content).replace(/\n/g, '<br>');
-        }
-      } else {
-        messageContent.textContent = content;
-      }
+      renderMessageContent(messageContent, content);
 
       contentDiv.appendChild(messageContent);
 
@@ -2904,11 +3903,28 @@ ${escapeHtml(memory.content)}
       }
 
       // ========== WebSocket 任务通知处理 ==========
+      let hasSkippedInitialWsNotice = false;
 
       /**
        * 在聊天界面显示任务完成通知
        */
       function showTaskNotification(event) {
+        const taskId = String(event?.taskId || '');
+        const taskName = String(event?.taskName || '');
+        const resultText = typeof event?.result === 'string'
+          ? event.result
+          : JSON.stringify(event?.result || '');
+        const isWebSocketConnectedNotice =
+          taskId === 'notification' &&
+          (taskName.includes('系统通知') || taskName.toLowerCase().includes('notification')) &&
+          (
+            resultText.includes('WebSocket 连接成功') ||
+            resultText.includes('WebSocket连接成功')
+          );
+        if (isWebSocketConnectedNotice) {
+          return;
+        }
+
         const chatContainer = document.getElementById('chatContainer');
         if (!chatContainer) return;
 
@@ -2987,6 +4003,20 @@ ${escapeHtml(memory.content)}
 
         // 监听通知消息
         window.wsClient.on('notification', (data) => {
+          const title = String(data?.title || '');
+          const contentText = String(data?.content || '');
+          const isInitialWsSuccessNotice =
+            !hasSkippedInitialWsNotice &&
+            (title.includes('系统通知') || title.includes('notification')) &&
+            (
+              contentText.includes('WebSocket 连接成功') ||
+              contentText.includes('WebSocket连接成功')
+            );
+          if (isInitialWsSuccessNotice) {
+            hasSkippedInitialWsNotice = true;
+            return;
+          }
+
           if (data.content) {
             showTaskNotification({
               taskId: 'notification',

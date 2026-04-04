@@ -1,0 +1,133 @@
+import { TaskExecutor } from '../tasks/executor';
+import type { TaskMode } from '../tasks/types';
+import { SkillLoader } from '../skills/loader';
+import { ToolRegistry } from './registry';
+import { saveMemoryTool } from './save-memory';
+import { WebFetchTool } from './web-fetch';
+import { FileEditTool } from './file-edit';
+import { BashTool } from './bash';
+import { PowerShellTool } from './powershell';
+import { WebSearchTool } from './web-search';
+import { CronCreateTool } from './cron-create';
+import { CronDeleteTool } from './cron-delete';
+import { CronListTool } from './cron-list';
+import { BriefTool } from './brief';
+
+export type UnifiedExecutionErrorType = 'timeout' | 'config' | 'execution';
+
+export interface UnifiedExecutionMetadata {
+  executor: 'TaskExecutor';
+  mode: TaskMode;
+  workspace: string;
+  timeoutMs: number;
+}
+
+export interface UnifiedExecutionResult {
+  success: boolean;
+  output?: string;
+  error?: string;
+  errorType?: UnifiedExecutionErrorType;
+  duration: number;
+  metadata: UnifiedExecutionMetadata;
+}
+
+const DEFAULT_TIMEOUT_MS = 300000;
+
+function createRegistry(): ToolRegistry {
+  const registry = new ToolRegistry();
+  registry.register(saveMemoryTool);
+  registry.register(WebFetchTool);
+  registry.register(FileEditTool);
+  registry.register(BashTool);
+  registry.register(PowerShellTool);
+  registry.register(WebSearchTool);
+  registry.register(CronCreateTool);
+  registry.register(CronDeleteTool);
+  registry.register(CronListTool);
+  registry.register(BriefTool);
+  return registry;
+}
+
+function getErrorType(errorMessage: string): UnifiedExecutionErrorType {
+  if (
+    errorMessage.includes('请先在设置页面配置 API Key') ||
+    errorMessage.includes('未知的 API 提供商') ||
+    errorMessage.includes('API key not configured')
+  ) {
+    return 'config';
+  }
+  return 'execution';
+}
+
+export async function executeWithUnifiedStack(params: {
+  instruction: string;
+  workspace: string;
+  mode: TaskMode;
+  timeoutMs?: number;
+}): Promise<UnifiedExecutionResult> {
+  const startedAt = Date.now();
+  const timeoutMs = params.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const metadata: UnifiedExecutionMetadata = {
+    executor: 'TaskExecutor',
+    mode: params.mode,
+    workspace: params.workspace,
+    timeoutMs,
+  };
+
+  const executor = new TaskExecutor(new SkillLoader(), createRegistry());
+
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const error = new Error(`子任务执行超时（${timeoutMs}ms）`);
+      (error as Error & { code?: string }).code = 'TIMEOUT';
+      reject(error);
+    }, timeoutMs);
+  });
+
+  try {
+    const executionPromise = executor.execute({
+      mode: params.mode,
+      instruction: params.instruction,
+      workspace: params.workspace,
+      apiKey: '',
+    });
+
+    const result = await Promise.race([executionPromise, timeoutPromise]);
+    const duration = Date.now() - startedAt;
+
+    if (result.error) {
+      const errorType = getErrorType(result.error);
+      return {
+        success: false,
+        error: result.error,
+        errorType,
+        duration,
+        metadata,
+      };
+    }
+
+    return {
+      success: true,
+      output: result.output,
+      duration,
+      metadata,
+    };
+  } catch (error) {
+    const duration = Date.now() - startedAt;
+    const message = (error as Error).message;
+    const code = (error as Error & { code?: string }).code;
+
+    return {
+      success: false,
+      error: message,
+      errorType: code === 'TIMEOUT' ? 'timeout' : getErrorType(message),
+      duration,
+      metadata,
+    };
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}

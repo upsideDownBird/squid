@@ -1,15 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentTool } from '../tools/agent';
 import type { ToolContext } from '../tools/base';
+import { executeWithUnifiedStack } from '../tools/unified-executor';
 
-// Mock Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => {
+vi.mock('../tools/unified-executor', () => {
   return {
-    default: vi.fn().mockImplementation(() => ({
-      messages: {
-        create: vi.fn()
-      }
-    }))
+    executeWithUnifiedStack: vi.fn()
   };
 });
 
@@ -20,22 +16,23 @@ describe('AgentTool', () => {
     mode: 'craft'
   };
 
-  const originalEnv = process.env.ANTHROPIC_API_KEY;
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    if (originalEnv) {
-      process.env.ANTHROPIC_API_KEY = originalEnv;
-    } else {
-      delete process.env.ANTHROPIC_API_KEY;
-    }
-  });
-
-  it('应该返回错误当未配置 API 密钥', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+  it('应该返回配置错误', async () => {
+    vi.mocked(executeWithUnifiedStack).mockResolvedValue({
+      success: false,
+      error: '请先在设置页面配置 API Key',
+      errorType: 'config',
+      duration: 5,
+      metadata: {
+        executor: 'TaskExecutor',
+        mode: 'craft',
+        workspace: mockContext.workDir,
+        timeoutMs: 300000
+      }
+    });
 
     const result = await AgentTool.call(
       {
@@ -45,20 +42,22 @@ describe('AgentTool', () => {
     );
 
     expect(result.data.success).toBe(false);
-    expect(result.data.error).toContain('未配置');
+    expect(result.data.error).toContain('配置');
+    expect(result.data.errorType).toBe('config');
   });
 
   it('应该成功执行子代理任务', async () => {
-    process.env.ANTHROPIC_API_KEY = 'test-key';
-
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const mockCreate = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: 'Task completed successfully' }]
+    vi.mocked(executeWithUnifiedStack).mockResolvedValue({
+      success: true,
+      output: 'Task completed successfully',
+      duration: 120,
+      metadata: {
+        executor: 'TaskExecutor',
+        mode: 'craft',
+        workspace: mockContext.workDir,
+        timeoutMs: 300000
+      }
     });
-
-    vi.mocked(Anthropic).mockImplementation(() => ({
-      messages: { create: mockCreate }
-    }) as any);
 
     const result = await AgentTool.call(
       {
@@ -71,38 +70,27 @@ describe('AgentTool', () => {
     expect(result.data.result).toBe('Task completed successfully');
     expect(result.data.instruction).toBe('Analyze the code');
     expect(result.data.duration).toBeGreaterThanOrEqual(0);
-    expect(mockCreate).toHaveBeenCalled();
+    expect(vi.mocked(executeWithUnifiedStack)).toHaveBeenCalledWith({
+      instruction: 'Analyze the code',
+      workspace: mockContext.workDir,
+      mode: mockContext.mode,
+      timeoutMs: 300000
+    });
   });
 
   it('应该支持自定义超时', async () => {
-    process.env.ANTHROPIC_API_KEY = 'test-key';
-
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-
-    // Mock 一个会被 abort 的 Promise
-    const mockCreate = vi.fn().mockImplementation((params, options) => {
-      return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          resolve({
-            content: [{ type: 'text', text: 'Result' }]
-          });
-        }, 1000);
-
-        // 监听 abort 信号
-        if (options?.signal) {
-          options.signal.addEventListener('abort', () => {
-            clearTimeout(timer);
-            const error = new Error('Request aborted');
-            error.name = 'AbortError';
-            reject(error);
-          });
-        }
-      });
+    vi.mocked(executeWithUnifiedStack).mockResolvedValue({
+      success: false,
+      error: '子任务执行超时（100ms）',
+      errorType: 'timeout',
+      duration: 100,
+      metadata: {
+        executor: 'TaskExecutor',
+        mode: 'craft',
+        workspace: mockContext.workDir,
+        timeoutMs: 100
+      }
     });
-
-    vi.mocked(Anthropic).mockImplementation(() => ({
-      messages: { create: mockCreate }
-    }) as any);
 
     const result = await AgentTool.call(
       {
@@ -112,20 +100,30 @@ describe('AgentTool', () => {
       mockContext
     );
 
-    // 应该超时
     expect(result.data.success).toBe(false);
     expect(result.data.error).toContain('超时');
-  }, 10000);
+    expect(result.data.errorType).toBe('timeout');
+    expect(vi.mocked(executeWithUnifiedStack)).toHaveBeenCalledWith({
+      instruction: 'Quick task',
+      workspace: mockContext.workDir,
+      mode: mockContext.mode,
+      timeoutMs: 100
+    });
+  });
 
   it('应该处理 API 错误', async () => {
-    process.env.ANTHROPIC_API_KEY = 'test-key';
-
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const mockCreate = vi.fn().mockRejectedValue(new Error('API Error'));
-
-    vi.mocked(Anthropic).mockImplementation(() => ({
-      messages: { create: mockCreate }
-    }) as any);
+    vi.mocked(executeWithUnifiedStack).mockResolvedValue({
+      success: false,
+      error: 'API Error',
+      errorType: 'execution',
+      duration: 10,
+      metadata: {
+        executor: 'TaskExecutor',
+        mode: 'craft',
+        workspace: mockContext.workDir,
+        timeoutMs: 300000
+      }
+    });
 
     const result = await AgentTool.call(
       {
@@ -136,6 +134,7 @@ describe('AgentTool', () => {
 
     expect(result.data.success).toBe(false);
     expect(result.data.error).toContain('API Error');
+    expect(result.data.errorType).toBe('execution');
   });
 
   it('mapToolResultToToolResultBlockParam 应该正确格式化输出', () => {

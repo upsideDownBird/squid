@@ -65,9 +65,16 @@ export class TaskExecutor {
     }
   }
 
-  private async buildMessages(instruction: string, history?: Message[]) {
+  private async buildMessages(
+    instruction: string,
+    workspace: string,
+    history?: Message[]
+  ) {
     // 加载记忆并注入到 system prompt
     let systemContent = '你是一个专业的 AI 助手，帮助用户完成各种任务。你能记住之前的对话内容。';
+    systemContent += `\n\n# Workspace\n当前工作目录（必须遵守）: ${workspace}\n` +
+      '所有需要文件系统/命令行的操作，都必须以该目录作为工作目录。\n' +
+      '当执行 git clone 且用户没有指定目标目录时，必须显式指定目标路径到该工作目录下（例如：git clone <repo> "<工作目录>/<仓库名>"）。';
 
     try {
       const memoryResult = await this.memorySelector.select(instruction);
@@ -78,6 +85,25 @@ export class TaskExecutor {
     } catch (error) {
       console.error('Failed to load memories:', error);
       // Continue without memories
+    }
+
+    // 渐进式披露：预先只注入技能名称与描述；技能正文在真正调用 skill 时再读取。
+    try {
+      const summaries = await this.skillLoader.listSkillSummaries();
+      const invocableSkills = summaries
+        .filter((skill) => skill.userInvocable)
+        .map((skill) => `- ${skill.name}: ${skill.description}`)
+        .sort();
+
+      if (invocableSkills.length > 0) {
+        systemContent += '\n\n# Available Skills\n';
+        systemContent += '以下是当前可调用的已安装技能（与技能中心一致）：\n';
+        systemContent += invocableSkills.join('\n');
+      } else {
+        systemContent += '\n\n# Available Skills\n当前没有可调用的已安装技能。';
+      }
+    } catch (error) {
+      console.error('Failed to load skills for prompt context:', error);
     }
 
     const messages: Array<{ role: string; content: string }> = [
@@ -109,9 +135,14 @@ export class TaskExecutor {
     return messages;
   }
 
-  private async callOpenAIAPI(config: ModelConfig, instruction: string, history?: Message[]): Promise<string> {
+  private async callOpenAIAPI(
+    config: ModelConfig,
+    instruction: string,
+    workspace: string,
+    history?: Message[]
+  ): Promise<string> {
     const endpoint = config.apiEndpoint || 'https://api.openai.com/v1';
-    const messages = await this.buildMessages(instruction, history);
+    const messages = await this.buildMessages(instruction, workspace, history);
 
     const response = await fetch(`${endpoint}/chat/completions`, {
       method: 'POST',
@@ -136,9 +167,15 @@ export class TaskExecutor {
     return result.choices[0].message.content;
   }
 
-  private async callOpenAIAPIStream(config: ModelConfig, instruction: string, history: Message[] | undefined, onChunk: (chunk: string) => void): Promise<void> {
+  private async callOpenAIAPIStream(
+    config: ModelConfig,
+    instruction: string,
+    history: Message[] | undefined,
+    workspace: string,
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
     const endpoint = config.apiEndpoint || 'https://api.openai.com/v1';
-    const messages = await this.buildMessages(instruction, history);
+    const messages = await this.buildMessages(instruction, workspace, history);
 
     // 获取所有注册的 tools
     const tools = this.toolRegistry.getAll();
@@ -257,7 +294,7 @@ export class TaskExecutor {
           onChunk(`\n🔧 调用工具: ${toolCall.function.name}\n`);
 
           const result = await tool.call(args, {
-            workDir: process.cwd(),
+            workDir: workspace || process.cwd(),
             taskId: Date.now().toString(),
             mode: 'ask'
           });
@@ -296,7 +333,12 @@ export class TaskExecutor {
     }
   }
 
-  private async callAnthropicAPI(config: ModelConfig, instruction: string, history?: Message[]): Promise<string> {
+  private async callAnthropicAPI(
+    config: ModelConfig,
+    instruction: string,
+    workspace?: string,
+    history?: Message[]
+  ): Promise<string> {
     const endpoint = config.apiEndpoint || 'https://api.anthropic.com/v1';
 
     // Anthropic API 不支持 system role 在 messages 中，需要单独传递
@@ -340,7 +382,10 @@ export class TaskExecutor {
         model: config.modelName || 'claude-3-5-sonnet-20241022',
         max_tokens: config.maxTokens || 4096,
         temperature: config.temperature || 0.7,
-        system: '你是一个专业的 AI 助手，帮助用户完成各种任务。你能记住之前的对话内容。',
+        system: `你是一个专业的 AI 助手，帮助用户完成各种任务。你能记住之前的对话内容。
+当前工作目录（必须遵守）: ${workspace || process.cwd()}
+所有需要文件系统/命令行的操作，都必须在该工作目录下执行。
+当执行 git clone 且用户没有指定目标目录时，必须显式指定目标路径到该工作目录下（例如：git clone <repo> "<工作目录>/<仓库名>"）。`,
         messages,
         tools: toolsParam
       })
@@ -367,7 +412,7 @@ export class TaskExecutor {
               responseText += `\n\n[执行工具: ${content.name}]\n`;
 
               const toolResult = await tool.call(content.input, {
-                workDir: process.cwd(),
+                workDir: workspace || process.cwd(),
                 taskId: Date.now().toString(),
                 mode: 'ask'
               });
@@ -430,16 +475,36 @@ export class TaskExecutor {
       let response: string;
 
       if (config.provider === 'openai') {
-        response = await this.callOpenAIAPI(config, request.instruction, request.conversationHistory);
+        response = await this.callOpenAIAPI(
+          config,
+          request.instruction,
+          request.workspace,
+          request.conversationHistory
+        );
       } else if (config.provider === 'anthropic') {
-        response = await this.callAnthropicAPI(config, request.instruction, request.conversationHistory);
+        response = await this.callAnthropicAPI(
+          config,
+          request.instruction,
+          request.workspace,
+          request.conversationHistory,
+        );
       } else if (config.provider === 'custom') {
         // 自定义端点，根据协议类型选择
         if (config.apiProtocol === 'anthropic') {
-          response = await this.callAnthropicAPI(config, request.instruction, request.conversationHistory);
+          response = await this.callAnthropicAPI(
+            config,
+            request.instruction,
+            request.workspace,
+            request.conversationHistory,
+          );
         } else {
           // 默认使用 OpenAI 协议
-          response = await this.callOpenAIAPI(config, request.instruction, request.conversationHistory);
+          response = await this.callOpenAIAPI(
+            config,
+            request.instruction,
+            request.workspace,
+            request.conversationHistory
+          );
         }
       } else {
         const error = '未知的 API 提供商';
@@ -494,19 +559,41 @@ export class TaskExecutor {
 
       // 根据提供商和协议类型调用相应的 API
       if (config.provider === 'openai') {
-        await this.callOpenAIAPIStream(config, request.instruction, request.conversationHistory, onChunk);
+        await this.callOpenAIAPIStream(
+          config,
+          request.instruction,
+          request.conversationHistory,
+          request.workspace,
+          onChunk
+        );
       } else if (config.provider === 'anthropic') {
         // Anthropic 使用非流式但支持工具调用
-        const response = await this.callAnthropicAPI(config, request.instruction, request.conversationHistory);
+        const response = await this.callAnthropicAPI(
+          config,
+          request.instruction,
+          request.workspace,
+          request.conversationHistory,
+        );
         onChunk(response);
       } else if (config.provider === 'custom') {
         // 自定义端点，根据协议类型选择
         if (config.apiProtocol === 'anthropic') {
-          const response = await this.callAnthropicAPI(config, request.instruction, request.conversationHistory);
+          const response = await this.callAnthropicAPI(
+            config,
+            request.instruction,
+            request.workspace,
+            request.conversationHistory,
+          );
           onChunk(response);
         } else {
           // 默认使用 OpenAI 协议
-          await this.callOpenAIAPIStream(config, request.instruction, request.conversationHistory, onChunk);
+          await this.callOpenAIAPIStream(
+            config,
+            request.instruction,
+            request.conversationHistory,
+            request.workspace,
+            onChunk
+          );
         }
       } else {
         throw new Error('未知的 API 提供商');

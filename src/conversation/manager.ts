@@ -130,6 +130,18 @@ export class ConversationManager {
     return conversation?.messages || [];
   }
 
+  getConversation(conversationId: string): Conversation | null {
+    return this.conversations.get(conversationId) || null;
+  }
+
+  async setConversationWorkspace(conversationId: string, workspace: string): Promise<void> {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) return;
+    conversation.workspace = workspace;
+    conversation.updatedAt = new Date().toISOString();
+    await this.saveConversation(conversationId);
+  }
+
   async loadConversation(conversationId: string): Promise<Conversation | null> {
     try {
       const filePath = join(this.configDir, `${conversationId}.json`);

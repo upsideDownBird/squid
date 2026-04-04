@@ -2,6 +2,7 @@ import type { Tool, ToolResult, ToolContext } from './base';
 import type { ToolResultBlockParam } from '@anthropic-ai/sdk/resources/index.mjs';
 import { z } from 'zod';
 import { SkillLoader } from '../skills/loader';
+import { executeWithUnifiedStack } from './unified-executor';
 
 const SkillInputSchema = z.object({
   skill_name: z.string().describe('技能名称'),
@@ -14,7 +15,19 @@ interface SkillOutput {
   success: boolean;
   skillName: string;
   result?: string;
+  duration?: number;
+  metadata?: {
+    executor: 'TaskExecutor';
+    mode: 'ask' | 'craft' | 'plan';
+    workspace: string;
+    timeoutMs: number;
+  };
   error?: string;
+}
+
+function isListSkillsAlias(name: string): boolean {
+  const normalized = name.trim().toLowerCase().replace(/[\s_]+/g, '-');
+  return normalized === 'list-skills' || normalized === 'list-skills-skill';
 }
 
 export const SkillTool: Tool<typeof SkillInputSchema, SkillOutput> = {
@@ -29,12 +42,30 @@ export const SkillTool: Tool<typeof SkillInputSchema, SkillOutput> = {
   ): Promise<ToolResult<SkillOutput>> {
     try {
       const loader = new SkillLoader();
+      const summaries = await loader.listSkillSummaries();
 
-      // 尝试加载技能
-      let skill;
-      try {
-        skill = await loader.loadSkill(`${input.skill_name}.md`);
-      } catch (error) {
+      if (isListSkillsAlias(input.skill_name)) {
+        const invocableSkills = summaries
+          .filter((s) => s.userInvocable)
+          .map((s) => `- ${s.name}: ${s.description}`)
+          .sort();
+
+        const resultText = invocableSkills.length > 0
+          ? `可用技能列表（${invocableSkills.length}）:\n${invocableSkills.join('\n')}`
+          : '当前没有可用技能。';
+        return {
+          data: {
+            success: true,
+            skillName: input.skill_name,
+            result: resultText
+          }
+        };
+      }
+
+      // 只有在 LLM 明确选择技能时，才加载该技能 body（systemPrompt）。
+      const skill = await loader.loadSkillByName(input.skill_name);
+
+      if (!skill) {
         return {
           data: {
             success: false,
@@ -58,24 +89,39 @@ export const SkillTool: Tool<typeof SkillInputSchema, SkillOutput> = {
       }
 
       // 构建结果
-      let result = `技能: ${skill.metadata.name}\n`;
-      result += `描述: ${skill.metadata.description}\n`;
-      result += `何时使用: ${skill.metadata['when-to-use']}\n\n`;
-      result += `系统提示:\n${skill.systemPrompt}\n`;
-
-      if (input.args) {
-        result += `\n参数: ${input.args}`;
+      const instructionParts: string[] = [];
+      instructionParts.push(`# Skill: ${skill.metadata.name}`);
+      instructionParts.push(skill.systemPrompt.trim());
+      if (input.args?.trim()) {
+        instructionParts.push(`## Skill Arguments\n${input.args.trim()}`);
       }
 
-      // 注意：这里只是返回技能信息
-      // 实际执行技能需要集成到 TaskExecutor 中
-      // 这是一个简化版本，主要用于展示技能内容
+      const execution = await executeWithUnifiedStack({
+        instruction: instructionParts.join('\n\n'),
+        workspace: context.workDir,
+        mode: context.mode,
+      });
+
+      if (!execution.success) {
+        return {
+          data: {
+            success: false,
+            skillName: input.skill_name,
+            duration: execution.duration,
+            metadata: execution.metadata,
+            error: execution.error || '技能执行失败'
+          },
+          error: execution.error || 'Skill execution failed'
+        };
+      }
 
       return {
         data: {
           success: true,
-          skillName: input.skill_name,
-          result
+          skillName: skill.metadata.name,
+          result: execution.output || '',
+          duration: execution.duration,
+          metadata: execution.metadata
         }
       };
     } catch (error) {
@@ -111,6 +157,6 @@ export const SkillTool: Tool<typeof SkillInputSchema, SkillOutput> = {
   },
 
   isConcurrencySafe: () => true,
-  isReadOnly: () => true, // 读取技能信息是只读操作
+  isReadOnly: () => false,
   isDestructive: () => false
 };

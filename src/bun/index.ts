@@ -6,7 +6,6 @@ import { MCPConnectionManager } from '../mcp/connection-manager';
 import { TaskAPI } from '../api/task-api';
 import { initializeBuiltinChannels } from '../channels/index';
 import { cronManager } from '../tools/cron-manager';
-import { eventBridge } from '../channels/bridge/event-bridge';
 
 async function main() {
   console.log('Jobopx Desktop - Backend starting...');
@@ -23,7 +22,7 @@ async function main() {
       // CORS headers
       const headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'application/json'
       };
@@ -158,6 +157,97 @@ async function main() {
         }
       }
 
+      // List Tencent SkillHub skills
+      if (url.pathname === '/api/skillhub/tencent/skills' && req.method === 'GET') {
+        try {
+          const query = url.searchParams.get('query') || undefined;
+          const limit = Number(url.searchParams.get('limit') || '20');
+          const result = await taskAPI.listTencentSkillHubSkills(query, limit);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            skills: [],
+            total: 0,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Install Tencent SkillHub skill
+      if (url.pathname === '/api/skillhub/tencent/install' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.installTencentSkillHubSkill({
+            slug: body.slug,
+            version: body.version,
+            force: body.force
+          });
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // List installed Tencent SkillHub skills
+      if (url.pathname === '/api/skillhub/tencent/installed' && req.method === 'GET') {
+        try {
+          const result = await taskAPI.listTencentInstalledSkills();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            skills: [],
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get installed Tencent SkillHub skill detail
+      if (url.pathname.startsWith('/api/skillhub/tencent/installed/') && req.method === 'GET') {
+        try {
+          const slug = decodeURIComponent(url.pathname.split('/').pop() || '');
+          const result = await taskAPI.getTencentInstalledSkillDetail(slug);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Uninstall installed Tencent SkillHub skill
+      if (url.pathname.startsWith('/api/skillhub/tencent/installed/') && req.method === 'DELETE') {
+        try {
+          const slug = decodeURIComponent(url.pathname.split('/').pop() || '');
+          const result = await taskAPI.uninstallTencentInstalledSkill(slug);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Uninstall installed Tencent SkillHub skill (POST fallback for CORS simplicity)
+      if (url.pathname === '/api/skillhub/tencent/uninstall' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.uninstallTencentInstalledSkill(body.slug);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
       // List experts
       if (url.pathname === '/api/experts' && req.method === 'GET') {
         try {
@@ -283,10 +373,64 @@ async function main() {
         }
       }
 
+      // Pick local directory using native system dialog
+      if (url.pathname === '/api/system/pick-directory' && req.method === 'POST') {
+        try {
+          const result = await taskAPI.pickDirectory();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
       // Clear conversation
       if (url.pathname === '/api/conversation/clear' && req.method === 'POST') {
         try {
           const result = await taskAPI.clearConversation();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Start a new thread (detach current conversation without deleting history)
+      if (url.pathname === '/api/threads/new' && req.method === 'POST') {
+        try {
+          const result = await taskAPI.startNewThread();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // List thread summaries
+      if (url.pathname === '/api/threads' && req.method === 'GET') {
+        try {
+          const result = await taskAPI.listThreads();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            threads: [],
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Switch active thread
+      if (url.pathname === '/api/threads/switch' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.switchThread(body.threadId);
           return new Response(JSON.stringify(result), { headers });
         } catch (error: any) {
           return new Response(JSON.stringify({
@@ -515,11 +659,8 @@ async function main() {
   // 设置 cronManager 的通知回调，连接到 EventBridge
   cronManager.setNotificationCallback((taskId: string, content: string) => {
     console.log(`[CronManager] 任务 ${taskId} 执行完成`);
-    eventBridge.notifyTaskComplete(taskId, {
-      taskName: content,
-      result: '定时任务已触发',
-      status: 'success',
-    });
+    // 避免重复推送：执行器内部已经通过 TaskExecutor 上报 task:complete 事件。
+    // 这里保留日志即可，UI 侧只展示一次完成消息。
   });
 
   // 设置 cronManager 的任务执行器
@@ -527,16 +668,19 @@ async function main() {
     console.log(`[CronManager] 执行定时任务 ${taskId}: ${prompt}`);
 
     try {
+      const workspaceConfig = await taskAPI.getWorkspaceConfig();
+      const workspace = workspaceConfig.workspace || process.cwd();
+
       // 调用 TaskAPI 执行任务
       const result = await taskAPI.executeTask({
         mode: 'ask',
-        workspace: process.cwd(),
+        workspace,
         instruction: prompt,
         conversationId: undefined, // 定时任务使用独立的对话
       });
 
       return {
-        success: result.success,
+        success: result.success && !result.error,
         result: result.output || result.error || '任务执行完成',
       };
     } catch (error) {
