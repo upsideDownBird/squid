@@ -1,0 +1,556 @@
+// Electrobun backend entry point
+import { BrowserWindow } from 'electrobun/bun';
+import { ClawServer } from '../claw/server';
+import { CronScheduler } from '../scheduler/cron-scheduler';
+import { MCPConnectionManager } from '../mcp/connection-manager';
+import { TaskAPI } from '../api/task-api';
+import { initializeBuiltinChannels } from '../channels/index';
+import { cronManager } from '../tools/cron-manager';
+import { eventBridge } from '../channels/bridge/event-bridge';
+
+async function main() {
+  console.log('Jobopx Desktop - Backend starting...');
+
+  // Initialize Task API
+  const taskAPI = new TaskAPI();
+
+  // Start HTTP API server for frontend communication
+  const apiServer = Bun.serve({
+    port: 50001,
+    async fetch(req) {
+      const url = new URL(req.url);
+
+      // CORS headers
+      const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+      };
+
+      if (req.method === 'OPTIONS') {
+        return new Response(null, { headers });
+      }
+
+      // Execute task
+      if (url.pathname === '/api/task/execute' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.executeTask(body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Execute task with streaming
+      if (url.pathname === '/api/task/execute-stream' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+
+          const stream = new ReadableStream({
+            async start(controller) {
+              try {
+                await taskAPI.executeTaskStream(body, (chunk: string) => {
+                  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
+                });
+                controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                controller.close();
+              } catch (error: any) {
+                controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: error.message })}\n\n`));
+                controller.close();
+              }
+            }
+          });
+
+          return new Response(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'Access-Control-Allow-Origin': '*'
+            }
+          });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // List tasks
+      if (url.pathname === '/api/tasks' && req.method === 'GET') {
+        try {
+          const tasks = await taskAPI.listTasks();
+          return new Response(JSON.stringify(tasks), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify([]), { headers });
+        }
+      }
+
+      // List skills
+      if (url.pathname === '/api/skills' && req.method === 'GET') {
+        try {
+          const skills = await taskAPI.listSkills();
+          return new Response(JSON.stringify(skills), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify([]), { headers });
+        }
+      }
+
+      // Generate skill from natural language
+      if (url.pathname === '/api/skills/generate' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.generateSkill(body.description);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Save skill
+      if (url.pathname === '/api/skills/save' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.saveSkill(body.yaml);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Preview skill before installation
+      if (url.pathname === '/api/skills/preview' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.previewSkill(body.url);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Install skill
+      if (url.pathname === '/api/skills/install' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.installSkill(body.data);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // List experts
+      if (url.pathname === '/api/experts' && req.method === 'GET') {
+        try {
+          const experts = await taskAPI.listExperts();
+          return new Response(JSON.stringify(experts), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify([]), { headers });
+        }
+      }
+
+      // Get expert by ID
+      if (url.pathname.startsWith('/api/experts/') && req.method === 'GET') {
+        try {
+          const id = url.pathname.split('/').pop();
+          const expert = await taskAPI.getExpert(id!);
+          return new Response(JSON.stringify(expert || null), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify(null), { headers });
+        }
+      }
+
+      // Switch expert for a task
+      if (url.pathname === '/api/tasks/switch-expert' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.switchExpert(body.taskId, body.expertId);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Generate expert from description
+      if (url.pathname === '/api/experts/generate' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.generateExpertFromDescription(body.description);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Create custom expert
+      if (url.pathname === '/api/experts/create' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.createCustomExpert(body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get model config
+      if (url.pathname === '/api/config/model' && req.method === 'GET') {
+        try {
+          const config = await taskAPI.getModelConfig();
+          return new Response(JSON.stringify(config), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({}), { headers });
+        }
+      }
+
+      // Save model config
+      if (url.pathname === '/api/config/model' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.saveModelConfig(body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Test model config
+      if (url.pathname === '/api/config/model/test' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.testModelConfig(body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get workspace config
+      if (url.pathname === '/api/config/workspace' && req.method === 'GET') {
+        try {
+          const config = await taskAPI.getWorkspaceConfig();
+          return new Response(JSON.stringify(config), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({}), { headers });
+        }
+      }
+
+      // Save workspace config
+      if (url.pathname === '/api/config/workspace' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.saveWorkspaceConfig(body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Clear conversation
+      if (url.pathname === '/api/conversation/clear' && req.method === 'POST') {
+        try {
+          const result = await taskAPI.clearConversation();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get conversation history
+      if (url.pathname === '/api/conversation/history' && req.method === 'GET') {
+        try {
+          const history = await taskAPI.getConversationHistory();
+          return new Response(JSON.stringify(history), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify([]), { headers });
+        }
+      }
+
+      // Compress conversation
+      if (url.pathname === '/api/conversation/compress' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.compressConversation(body.conversationId, body.manual || false);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get conversation usage
+      if (url.pathname === '/api/conversation/usage' && req.method === 'GET') {
+        try {
+          const conversationId = url.searchParams.get('id') || undefined;
+          const result = await taskAPI.getConversationUsage(conversationId);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Memory API routes
+      // List memories
+      if (url.pathname === '/api/memory' && req.method === 'GET') {
+        try {
+          const type = url.searchParams.get('type') || undefined;
+          const result = await taskAPI.listMemories(type);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get memory by ID
+      if (url.pathname.match(/^\/api\/memory\/[^\/]+$/) && req.method === 'GET') {
+        try {
+          const id = url.pathname.split('/').pop()!;
+          const result = await taskAPI.getMemory(id);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Create memory
+      if (url.pathname === '/api/memory' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.createMemory(body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Update memory
+      if (url.pathname.match(/^\/api\/memory\/[^\/]+$/) && req.method === 'PUT') {
+        try {
+          const id = url.pathname.split('/').pop()!;
+          const body = await req.json();
+          const result = await taskAPI.updateMemory(id, body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Delete memory
+      if (url.pathname.match(/^\/api\/memory\/[^\/]+$/) && req.method === 'DELETE') {
+        try {
+          const id = url.pathname.split('/').pop()!;
+          const result = await taskAPI.deleteMemory(id);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Search memories
+      if (url.pathname === '/api/memory/search' && req.method === 'GET') {
+        try {
+          const query = url.searchParams.get('q') || '';
+          const result = await taskAPI.searchMemories(query);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Trigger manual extraction
+      if (url.pathname === '/api/memory/extract' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.triggerManualExtraction(body.conversationId);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            created: 0,
+            skipped: 0,
+            errors: [error.message]
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get extraction config
+      if (url.pathname === '/api/config/extraction' && req.method === 'GET') {
+        try {
+          const result = await taskAPI.getExtractionConfig();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Save extraction config
+      if (url.pathname === '/api/config/extraction' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.saveExtractionConfig(body);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      // Get extraction stats
+      if (url.pathname === '/api/memory/stats' && req.method === 'GET') {
+        try {
+          const result = await taskAPI.getExtractionStats();
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
+      return new Response('Not Found', { status: 404 });
+    }
+  });
+
+  console.log(`API server started at http://localhost:${apiServer.port}`);
+
+  // Use absolute path
+  const htmlPath = '/Users/myidd007/My project/yaoc/jobopx-desktop/public/index.html';
+  console.log('Loading HTML from:', htmlPath);
+
+  // Create main window with file URL
+  const mainWindow = new BrowserWindow({
+    title: 'Jobopx Desktop',
+    url: `file://${htmlPath}`,
+    width: 1200,
+    height: 800
+  } as any);
+
+  // Initialize MCP connection manager
+  const mcpManager = new MCPConnectionManager();
+  await mcpManager.loadConfigs();
+
+  // Initialize Claw server
+  const clawServer = new ClawServer({
+    port: 3000,
+    host: 'localhost',
+    enabled: false
+  } as any);
+
+  // Initialize scheduler
+  const scheduler = new CronScheduler();
+
+  // Initialize channel system
+  await initializeBuiltinChannels();
+  console.log('Channel system initialized');
+
+  // 设置 cronManager 的通知回调，连接到 EventBridge
+  cronManager.setNotificationCallback((taskId: string, content: string) => {
+    console.log(`[CronManager] 任务 ${taskId} 执行完成`);
+    eventBridge.notifyTaskComplete(taskId, {
+      taskName: content,
+      result: '定时任务已触发',
+      status: 'success',
+    });
+  });
+
+  // 设置 cronManager 的任务执行器
+  cronManager.setTaskExecutor(async (prompt: string, taskId: string) => {
+    console.log(`[CronManager] 执行定时任务 ${taskId}: ${prompt}`);
+
+    try {
+      // 调用 TaskAPI 执行任务
+      const result = await taskAPI.executeTask({
+        mode: 'ask',
+        workspace: process.cwd(),
+        instruction: prompt,
+        conversationId: undefined, // 定时任务使用独立的对话
+      });
+
+      return {
+        success: result.success,
+        result: result.output || result.error || '任务执行完成',
+      };
+    } catch (error) {
+      console.error(`[CronManager] 任务执行失败:`, error);
+      return {
+        success: false,
+        result: (error as Error).message,
+      };
+    }
+  });
+
+  console.log('CronManager notification callback and task executor set');
+
+  console.log('Backend initialized successfully');
+}
+
+main().catch(console.error);

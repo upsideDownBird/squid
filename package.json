@@ -1,0 +1,46 @@
+{
+  "name": "jobopx-desktop",
+  "version": "0.1.0",
+  "description": "AI-powered desktop workbench built with Electrobun",
+  "main": "src/main.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "electrobun dev",
+    "dev:node": "tsx src/main.ts",
+    "build": "tsc",
+    "build:electron": "electrobun build",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "server": "tsx src/claw/server-standalone.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@types/ws": "^8.18.1",
+    "axios": "^1.14.0",
+    "cheerio": "^1.2.0",
+    "glob": "^13.0.6",
+    "lru-cache": "^11.0.0",
+    "node-cron": "^3.0.3",
+    "openai": "^4.70.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "turndown": "^7.2.4",
+    "ws": "^8.20.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^6.4.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/turndown": "^5.0.6",
+    "electrobun": "^1.16.0",
+    "fastify": "^5.0.0",
+    "nodemailer": "^6.9.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.0"
+  }
+}

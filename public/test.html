@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test</title>
+</head>
+<body>
+  <h1>测试页面</h1>
+  <input type="text" id="testInput" placeholder="测试 Ctrl+V">
+  <button onclick="testClick()">测试按钮</button>
+
+  <script>
+    function testClick() {
+      console.log('Button clicked!');
+      alert('按钮点击成功！');
+    }
+
+    document.getElementById('testInput').addEventListener('keydown', (e) => {
+      console.log('Key:', e.key, 'Ctrl:', e.ctrlKey, 'Meta:', e.metaKey);
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        console.log('Paste detected!');
+      }
+    });
+
+    console.log('Test page loaded');
+  </script>
+</body>
+</html>

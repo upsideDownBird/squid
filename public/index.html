@@ -1,0 +1,3006 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Jobopx Desktop</title>
+  <script src="lucide.min.js"></script>
+  <script src="websocket-client.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+    .sidebar {
+      width: 260px;
+      background: #ffffff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+    }
+    .sidebar-nav {
+      padding: 8px 0;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      margin-bottom: 2px;
+      color: #666;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .nav-item:hover {
+      background: #f5f5f5;
+      color: #1a1a1a;
+    }
+    .nav-item.active {
+      background: #f0f0f0;
+      color: #1a1a1a;
+      font-weight: 500;
+    }
+    .nav-item-icon {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+    .task-section {
+      padding: 0 4px;
+      margin-top: 16px;
+    }
+    .task-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      color: #999;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .task-section-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #999;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover {
+      background: #f0f0f0;
+      color: #666;
+    }
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .task-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 4px;
+    }
+    .task-item {
+      padding: 10px 12px;
+      margin-bottom: 2px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+    }
+    .task-item:hover {
+      background: #f5f5f5;
+    }
+    .task-item.active {
+      background: #f0f0f0;
+    }
+    .task-title {
+      font-size: 13px;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .task-meta {
+      font-size: 11px;
+      color: #999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      overflow: hidden;
+    }
+    .main-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .main-header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 24px;
+      opacity: 0.2;
+      stroke-width: 1.5;
+    }
+    .empty-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .empty-subtitle {
+      font-size: 14px;
+      color: #999;
+    }
+    .input-area {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e5e5;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+    .input-wrapper {
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 12px 16px;
+      transition: all 0.2s;
+    }
+    .input-wrapper:focus-within {
+      border-color: #1a1a1a;
+      box-shadow: 0 0 0 1px #1a1a1a;
+    }
+    .input-main {
+      width: 100%;
+      border: none;
+      background: none;
+      font-size: 14px;
+      color: #1a1a1a;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+      min-height: 24px;
+      max-height: 200px;
+    }
+    .input-main::placeholder {
+      color: #999;
+    }
+    .input-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .input-options {
+      display: flex;
+      gap: 8px;
+    }
+    .option-btn {
+      padding: 6px 12px;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+    .option-btn:hover {
+      background: #ffffff;
+      border-color: #d0d0d0;
+    }
+    .option-btn:focus {
+      outline: none;
+      border-color: #1a1a1a;
+      background: #ffffff;
+    }
+    .custom-select {
+      position: relative;
+      display: inline-block;
+    }
+    .custom-select-trigger {
+      padding: 6px 32px 6px 12px;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1a1a1a;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      min-width: 140px;
+    }
+    .custom-select-trigger:hover {
+      background: #fafafa;
+      border-color: #d0d0d0;
+    }
+    .custom-select.open .custom-select-trigger {
+      border-color: #1a1a1a;
+    }
+    .custom-select-arrow {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s;
+      pointer-events: none;
+    }
+    .custom-select.open .custom-select-arrow {
+      transform: translateY(-50%) rotate(180deg);
+    }
+    .custom-select-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    .custom-select.open .custom-select-dropdown {
+      display: block;
+    }
+    .custom-select-option {
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #1a1a1a;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .custom-select-option:hover {
+      background: #f5f5f5;
+    }
+    .custom-select-option.selected {
+      background: #f0f0f0;
+    }
+    .custom-select-option-check {
+      width: 16px;
+      height: 16px;
+      opacity: 0;
+    }
+    .custom-select-option.selected .custom-select-option-check {
+      opacity: 1;
+    }
+    .custom-select-label {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 4px;
+      padding: 8px 12px 0;
+      font-weight: 500;
+    }
+    .submit-btn {
+      padding: 8px;
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
+    .submit-btn:hover {
+      background: #000;
+    }
+    .submit-btn:disabled {
+      background: #e5e5e5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .submit-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #666;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      color: #1a1a1a;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.2s;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: #1a1a1a;
+      box-shadow: 0 0 0 1px #1a1a1a;
+      background: #ffffff;
+    }
+    .form-group input:hover, .form-group textarea:hover, .form-group select:hover {
+      background: #ffffff;
+      border-color: #d0d0d0;
+    }
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .btn {
+      padding: 10px 20px;
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: #000000;
+    }
+    .btn:disabled {
+      background: #e5e5e5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #666;
+    }
+    .btn-secondary:hover {
+      background: #e5e5e5;
+    }
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message {
+      display: flex;
+      gap: 12px;
+      max-width: 80%;
+    }
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .message.assistant {
+      align-self: flex-start;
+    }
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e5e5e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .message.user .message-avatar {
+      background: #1a1a1a;
+      color: white;
+    }
+    .message-content {
+      background: #f5f5f5;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #1a1a1a;
+    }
+    .message.user .message-content {
+      background: #1a1a1a;
+      color: white;
+    }
+    .message-content pre {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 8px 0;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    .message.user .message-content pre {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .message-time {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+    .hidden {
+      display: none;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .status.running {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+    .status.completed {
+      background: #e6f4ea;
+      color: #1e8e3e;
+    }
+    .status.error {
+      background: #fce8e6;
+      color: #d93025;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .grid-item {
+      background: #f8f9fa;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .grid-item:hover {
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    .grid-item h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+    }
+    .grid-item p {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      padding: 4px 10px;
+      background: #e8f0fe;
+      color: #1a73e8;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .page-content {
+      padding: 0;
+      width: 100%;
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d0d0d0;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #b0b0b0;
+    }
+    .context-indicator {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    .context-indicator:hover {
+      transform: scale(1.1);
+      background: #f0f0f0;
+    }
+    .context-indicator svg {
+      width: 20px;
+      height: 20px;
+    }
+    .context-indicator .progress-circle {
+      transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+    }
+    .context-indicator .tooltip {
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 1000;
+    }
+    .context-indicator:hover .tooltip {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="task">
+        <i data-lucide="edit-3" class="nav-item-icon"></i>
+        <span>新线程</span>
+      </a>
+      <a href="#" class="nav-item" data-page="skills">
+        <i data-lucide="package" class="nav-item-icon"></i>
+        <span>技能</span>
+      </a>
+      <a href="#" class="nav-item" data-page="experts">
+        <i data-lucide="users" class="nav-item-icon"></i>
+        <span>专家</span>
+      </a>
+      <a href="#" class="nav-item" data-page="memory">
+        <i data-lucide="brain" class="nav-item-icon"></i>
+        <span>记忆</span>
+      </a>
+      <a href="#" class="nav-item" data-page="settings">
+        <i data-lucide="settings" class="nav-item-icon"></i>
+        <span>设置</span>
+      </a>
+    </div>
+
+    <div class="task-section">
+      <div class="task-section-header">
+        <span>线程</span>
+        <div class="task-section-actions">
+          <button class="icon-btn" onclick="refreshTaskList()" title="刷新">
+            <i data-lucide="refresh-cw"></i>
+          </button>
+          <button class="icon-btn" onclick="filterTasks()" title="筛选">
+            <i data-lucide="filter"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="task-list" id="taskList">
+      <div class="task-item">
+        <div class="task-title">暂无任务</div>
+        <div class="task-meta">开始创建你的第一个任务</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="task-page" style="display: flex; flex-direction: column; height: 100%;">
+      <div class="main-header">
+        <h1>新线程</h1>
+
+        <div class="header-actions">
+          <!-- 上下文占用指示器 -->
+          <div class="context-indicator" id="contextIndicator" onclick="handleContextClick()" title="点击压缩对话">
+            <svg width="20" height="20" viewBox="0 0 32 32">
+              <circle cx="16" cy="16" r="12" stroke="#e5e7eb" stroke-width="3" fill="none"/>
+              <circle
+                id="contextProgressCircle"
+                cx="16" cy="16" r="12"
+                stroke="#10b981"
+                stroke-width="3"
+                fill="none"
+                stroke-dasharray="75.4"
+                stroke-dashoffset="75.4"
+                stroke-linecap="round"
+                transform="rotate(-90 16 16)"
+                class="progress-circle"/>
+            </svg>
+            <div class="tooltip" id="contextTooltip">0%</div>
+          </div>
+
+          <button class="icon-btn" onclick="clearConversation()" title="清除对话历史">
+            <i data-lucide="trash-2"></i>
+          </button>
+          <div class="custom-select" id="expertSelect">
+            <div class="custom-select-trigger">
+              <span id="expertSelectText">选择专家</span>
+              <i data-lucide="chevron-down" class="custom-select-arrow"></i>
+            </div>
+            <div class="custom-select-dropdown" id="expertDropdown">
+              <div class="custom-select-option" data-value="" onclick="selectExpert('')">
+                <span>无 - 通用助手</span>
+                <i data-lucide="check" class="custom-select-option-check"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="custom-select" id="skillSelect">
+            <div class="custom-select-trigger">
+              <span id="skillSelectText">选择技能</span>
+              <i data-lucide="chevron-down" class="custom-select-arrow"></i>
+            </div>
+            <div class="custom-select-dropdown" id="skillDropdown">
+              <div class="custom-select-option" data-value="" onclick="selectSkill('')">
+                <span>无 - 通用模式</span>
+                <i data-lucide="check" class="custom-select-option-check"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="chat-container" id="chatContainer">
+          <div class="empty-state">
+            <i data-lucide="bot" class="empty-icon"></i>
+            <div class="empty-title">开始构建</div>
+            <div class="empty-subtitle">在下方输入你的需求，开始创建任务</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-wrapper">
+          <textarea
+            id="instruction"
+            class="input-main"
+            placeholder="Ask Jobopx anything, @ to add files, / for commands, $ for skills"
+            rows="1"
+          ></textarea>
+
+          <div class="input-toolbar">
+            <div class="input-options">
+              <select id="mode" class="option-btn">
+                <option value="ask">Ask</option>
+                <option value="craft">Craft</option>
+                <option value="plan">Plan</option>
+              </select>
+              <input type="text" id="workspace" class="option-btn" placeholder="工作目录" value="/tmp/jobopx-test" style="width: 200px;">
+            </div>
+            <button class="submit-btn" id="runBtn" onclick="runTask()">
+              <i data-lucide="arrow-up"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="skills-page" class="hidden" style="display: none; flex-direction: column; height: 100%;">
+      <div class="main-header">
+        <h1>技能管理</h1>
+        <div class="header-actions">
+          <button class="btn" onclick="showCreateSkillForm()">创建技能</button>
+          <button class="btn btn-secondary" onclick="showInstallSkillForm()">安装技能</button>
+        </div>
+      </div>
+
+      <div class="main-content" style="flex: 1; overflow-y: auto;">
+        <div class="page-content">
+          <div id="createSkillForm" class="card hidden">
+            <h3>创建自定义技能</h3>
+            <div class="form-group">
+              <label>用自然语言描述你想要的技能</label>
+              <textarea id="skillDescription" placeholder="例如：我需要一个技能，可以分析 Python 代码的复杂度，找出性能瓶颈，并给出优化建议"></textarea>
+            </div>
+            <button class="btn" id="generateSkillBtn" onclick="generateSkill()">生成技能</button>
+            <button class="btn btn-secondary" onclick="hideCreateSkillForm()" style="margin-left: 10px;">取消</button>
+
+            <div id="skillPreview" class="hidden" style="margin-top: 20px;">
+              <h4 style="margin-bottom: 12px;">预览生成的技能：</h4>
+              <pre id="skillYamlPreview" style="background: #f8f9fa; padding: 16px; border-radius: 8px; max-height: 400px; overflow-y: auto; font-size: 13px;"></pre>
+              <button class="btn" onclick="saveSkill()" style="margin-top: 12px;">保存技能</button>
+            </div>
+          </div>
+
+          <div id="installSkillForm" class="card hidden">
+            <h3>安装技能</h3>
+            <div class="form-group">
+              <label>技能 URL 或本地路径</label>
+              <input type="text" id="skillUrl" placeholder="https://example.com/skill.md 或 /path/to/skill.md">
+            </div>
+            <button class="btn" id="previewSkillBtn" onclick="previewSkill()">预览技能</button>
+            <button class="btn btn-secondary" onclick="hideInstallSkillForm()" style="margin-left: 10px;">取消</button>
+
+            <div id="skillSecurityPreview" class="hidden" style="margin-top: 20px;">
+              <h4 style="margin-bottom: 12px;">安全预览：</h4>
+              <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                <div style="margin-bottom: 12px;">
+                  <strong style="color: #1a1a1a;">技能名称：</strong>
+                  <span id="previewName"></span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <strong style="color: #1a1a1a;">描述：</strong>
+                  <span id="previewDescription"></span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <strong style="color: #ff9800;">允许的工具：</strong>
+                  <div id="previewTools" style="margin-top: 8px;"></div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <strong style="color: #d93025;">Hooks：</strong>
+                  <div id="previewHooks" style="margin-top: 8px;"></div>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ff9800;">
+                  <strong>⚠️ 安全提示：</strong>
+                  <ul style="margin: 8px 0 0 20px; font-size: 13px; color: #666;">
+                    <li>请仔细检查允许的工具列表</li>
+                    <li>Hooks 可以执行任意命令，请确保来源可信</li>
+                    <li>只安装来自可信来源的技能</li>
+                  </ul>
+                </div>
+              </div>
+              <button class="btn" onclick="installSkill()" style="margin-top: 12px;">确认安装</button>
+            </div>
+          </div>
+
+          <div id="skillsList">
+            <h3 style="margin-bottom: 16px;">已安装的技能</h3>
+            <div id="skillsGrid" class="grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="experts-page" class="hidden" style="display: none; flex-direction: column; height: 100%;">
+      <div class="main-header">
+        <h1>专家中心</h1>
+        <div class="header-actions">
+          <button class="btn" onclick="showCreateExpertForm()">创建专家</button>
+        </div>
+      </div>
+
+      <div class="main-content" style="flex: 1; overflow-y: auto;">
+        <div class="page-content">
+          <div id="createExpertForm" class="card hidden">
+            <h3>创建自定义专家</h3>
+            <div class="form-group">
+              <label>用自然语言描述专家角色</label>
+              <textarea id="expertDescription" placeholder="例如：我需要一个电商运营专家，擅长商品上架、店铺装修、营销活动策划"></textarea>
+            </div>
+            <button class="btn" id="generateExpertBtn" onclick="generateExpert()">生成专家</button>
+            <button class="btn btn-secondary" onclick="hideCreateExpertForm()" style="margin-left: 10px;">取消</button>
+
+            <div id="expertPreview" class="hidden" style="margin-top: 20px;">
+              <h4 style="margin-bottom: 12px;">预览生成的专家：</h4>
+              <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                <div class="form-group">
+                  <label>专家名称</label>
+                  <input type="text" id="expertName" placeholder="例如：电商运营专家">
+                </div>
+                <div class="form-group">
+                  <label>角色描述</label>
+                  <input type="text" id="expertRole" placeholder="例如：专业电商运营专家">
+                </div>
+                <div class="form-group">
+                  <label>专业领域（用逗号分隔）</label>
+                  <input type="text" id="expertExpertise" placeholder="例如：商品上架,店铺装修,营销策划">
+                </div>
+                <div class="form-group">
+                  <label>提示词模板</label>
+                  <textarea id="expertPrompt"></textarea>
+                </div>
+              </div>
+              <button class="btn" onclick="saveExpert()" style="margin-top: 12px;">保存专家</button>
+            </div>
+          </div>
+
+          <div id="expertsList">
+            <h3 style="margin-bottom: 16px;">专家列表</h3>
+            <div id="expertsGrid" class="grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="memory-page" class="hidden" style="display: none; flex-direction: column; height: 100%;">
+      <div class="main-header">
+        <h1>记忆管理</h1>
+        <div class="header-actions">
+          <button class="btn" onclick="showCreateMemoryForm()">创建记忆</button>
+        </div>
+      </div>
+      <div class="main-content" style="flex: 1; overflow-y: auto;">
+        <div class="page-content">
+          <!-- 过滤器和搜索 -->
+          <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
+            <div style="flex: 1;">
+              <input type="text" id="memorySearchInput" placeholder="搜索记忆..." style="width: 100%; padding: 8px 12px; border: 1px solid #e5e5e5; border-radius: 6px; font-size: 14px;">
+            </div>
+            <select id="memoryTypeFilter" style="padding: 8px 12px; border: 1px solid #e5e5e5; border-radius: 6px; font-size: 14px;">
+              <option value="">所有类型</option>
+              <option value="user">用户信息</option>
+              <option value="feedback">反馈建议</option>
+              <option value="project">项目信息</option>
+              <option value="reference">参考资料</option>
+            </select>
+          </div>
+
+          <!-- 记忆列表 -->
+          <div id="memoriesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+            <!-- 记忆卡片将在这里动态生成 -->
+          </div>
+
+          <!-- 空状态 -->
+          <div id="memoryEmptyState" style="display: none; text-align: center; padding: 60px 20px; color: #999;">
+            <i data-lucide="brain" style="width: 64px; height: 64px; margin: 0 auto 16px; opacity: 0.3;"></i>
+            <p style="font-size: 16px; margin-bottom: 8px;">还没有记忆</p>
+            <p style="font-size: 14px;">创建第一个记忆来帮助 AI 记住重要信息</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings-page" class="hidden" style="display: none; flex-direction: column; height: 100%;">
+      <div class="main-header">
+        <h1>设置</h1>
+      </div>
+      <div class="main-content" style="flex: 1; overflow-y: auto;">
+        <div class="page-content">
+          <div class="card">
+            <h3>模型配置</h3>
+            <div class="form-group">
+              <label>API 提供商</label>
+              <select id="apiProvider">
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="custom">自定义端点</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>API Key</label>
+              <input type="password" id="apiKey" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+              <label>模型名称</label>
+              <input type="text" id="modelName" placeholder="gpt-4-turbo">
+            </div>
+            <div class="form-group" id="apiEndpointGroup" style="display: none;">
+              <label>API 端点</label>
+              <input type="text" id="apiEndpoint" placeholder="https://api.openai.com/v1">
+            </div>
+            <div class="form-group" id="apiProtocolGroup" style="display: none;">
+              <label>协议类型</label>
+              <select id="apiProtocol">
+                <option value="openai">OpenAI 兼容</option>
+                <option value="anthropic">Anthropic 兼容</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>温度 (Temperature)</label>
+              <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.7">
+            </div>
+            <div class="form-group">
+              <label>最大 Token 数</label>
+              <input type="number" id="maxTokens" min="1" max="128000" step="1" value="4096">
+            </div>
+            <button class="btn" id="saveModelConfigBtn">保存配置</button>
+            <button class="btn btn-secondary" id="testModelConfigBtn" style="margin-left: 10px;">测试连接</button>
+
+            <!-- 测试结果提示 -->
+            <div id="testResult" style="margin-top: 15px; padding: 12px; border-radius: 8px; display: none;"></div>
+          </div>
+
+          <div class="card">
+            <h3>工作目录</h3>
+            <div class="form-group">
+              <label>默认工作目录</label>
+              <input type="text" id="defaultWorkspace" placeholder="/tmp/jobopx-test">
+            </div>
+            <button class="btn" id="saveWorkspaceConfigBtn">保存配置</button>
+          </div>
+
+          <div class="card">
+            <h3>对话压缩设置</h3>
+            <div class="form-group">
+              <label>自动压缩阈值 (%)</label>
+              <input type="number" id="compressionThreshold" min="50" max="90" step="5" value="70" placeholder="70">
+              <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                当对话 token 使用率达到此阈值时自动触发压缩（建议 70-80%）
+              </small>
+            </div>
+            <div class="form-group">
+              <label>上下文限制 (tokens)</label>
+              <input type="number" id="contextLimit" min="10000" max="200000" step="10000" value="100000" placeholder="100000">
+              <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                模型的最大上下文窗口大小
+              </small>
+            </div>
+            <button class="btn" id="saveCompressionConfigBtn">保存配置</button>
+            <div style="margin-top: 12px; padding: 12px; background: #f9fafb; border-radius: 6px; font-size: 13px; color: #666;">
+              <strong>压缩策略：</strong>
+              <ul style="margin: 8px 0 0 20px; padding: 0;">
+                <li>70%：微压缩 - 清除冗余内容</li>
+                <li>75%：智能截断 - 保留最近消息</li>
+                <li>80%：部分压缩 - AI 摘要中间部分</li>
+                <li>85%：完整压缩 - AI 摘要全部历史</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Debug Console -->
+  <div id="debugConsole" style="position: fixed; bottom: 0; left: 0; width: 350px; height: 250px; background: #1a1a1a; color: #00ff00; font-family: monospace; font-size: 11px; overflow-y: auto; padding: 10px; border-top: 2px solid #00ff00; border-right: 2px solid #00ff00; z-index: 10000; display: none;">
+    <div style="position: sticky; top: 0; background: #1a1a1a; padding-bottom: 5px; margin-bottom: 5px; border-bottom: 1px solid #00ff00;">
+      <button onclick="document.getElementById('debugConsole').style.display='none'" style="float: right; background: #ff0000; color: #fff; border: none; padding: 2px 8px; cursor: pointer;">关闭</button>
+      <button onclick="document.getElementById('debugLog').innerHTML=''" style="float: right; background: #333; color: #fff; border: none; padding: 2px 8px; cursor: pointer; margin-right: 5px;">清空</button>
+      <strong>调试控制台</strong>
+    </div>
+    <div id="debugLog"></div>
+  </div>
+
+  <script>
+    // Debug console
+    const debugLog = document.getElementById('debugLog');
+    const debugConsole = document.getElementById('debugConsole');
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+
+    function addDebugLine(type, ...args) {
+      // 只在调试控制台打开时才记录日志
+      if (debugConsole.style.display === 'none') return;
+
+      const line = document.createElement('div');
+      line.style.marginBottom = '2px';
+      line.style.color = type === 'error' ? '#ff0000' : '#00ff00';
+      line.textContent = args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+      debugLog.appendChild(line);
+      debugLog.scrollTop = debugLog.scrollHeight;
+    }
+
+    console.log = function(...args) {
+      originalConsoleLog.apply(console, args);
+      addDebugLine('log', ...args);
+    };
+
+    console.error = function(...args) {
+      originalConsoleError.apply(console, args);
+      addDebugLine('error', ...args);
+    };
+
+    // Show debug console on Ctrl+D
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        debugConsole.style.display = debugConsole.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+
+    // Task list management
+    let tasks = [];
+    let currentTaskId = null;
+    let skills = [];
+    let experts = [];
+    let selectedExpert = '';
+    let selectedSkill = '';
+
+    function initCustomSelects() {
+      // Toggle dropdown
+      const expertSelect = document.getElementById('expertSelect');
+      const skillSelect = document.getElementById('skillSelect');
+
+      if (expertSelect) {
+        expertSelect.addEventListener('click', function(e) {
+          if (e.target.closest('.custom-select-option')) return;
+          e.stopPropagation();
+          this.classList.toggle('open');
+          if (skillSelect) skillSelect.classList.remove('open');
+        });
+      }
+
+      if (skillSelect) {
+        skillSelect.addEventListener('click', function(e) {
+          if (e.target.closest('.custom-select-option')) return;
+          e.stopPropagation();
+          this.classList.toggle('open');
+          if (expertSelect) expertSelect.classList.remove('open');
+        });
+      }
+
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-select')) {
+          document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('open'));
+        }
+      });
+    }
+
+    function selectExpert(value) {
+      selectedExpert = value;
+      const text = value ? experts.find(e => e.id === value)?.name || '选择专家' : '选择专家';
+      document.getElementById('expertSelectText').textContent = text;
+
+      // Update selected state
+      document.querySelectorAll('#expertDropdown .custom-select-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+      });
+
+      document.getElementById('expertSelect').classList.remove('open');
+      lucide.createIcons();
+    }
+
+    function selectSkill(value) {
+      selectedSkill = value;
+      const text = value ? skills.find(s => s.name === value)?.name || '选择技能' : '选择技能';
+      document.getElementById('skillSelectText').textContent = text;
+
+      // Update selected state
+      document.querySelectorAll('#skillDropdown .custom-select-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+      });
+
+      document.getElementById('skillSelect').classList.remove('open');
+      lucide.createIcons();
+    }
+
+    // Load skills on page load
+    async function loadSkills() {
+      try {
+        const response = await fetch('http://localhost:50001/api/skills');
+        if (response.ok) {
+          skills = await response.json();
+          renderSkillSelector();
+        }
+      } catch (error) {
+        console.error('Failed to load skills:', error);
+      }
+    }
+
+    // Render skill selector
+    function renderSkillSelector() {
+      const dropdown = document.getElementById('skillDropdown');
+
+      dropdown.innerHTML = `
+        <div class="custom-select-option ${selectedSkill === '' ? 'selected' : ''}" data-value="" onclick="selectSkill('')">
+          <span>无 - 通用模式</span>
+          <i data-lucide="check" class="custom-select-option-check"></i>
+        </div>
+      `;
+
+      skills.forEach(skill => {
+        const option = document.createElement('div');
+        option.className = `custom-select-option ${selectedSkill === skill.name ? 'selected' : ''}`;
+        option.dataset.value = skill.name;
+        option.onclick = () => selectSkill(skill.name);
+        option.innerHTML = `
+          <span>${escapeHtml(skill.name)}</span>
+          <i data-lucide="check" class="custom-select-option-check"></i>
+        `;
+        dropdown.appendChild(option);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Load experts on page load
+    async function loadExperts() {
+      try {
+        const response = await fetch('http://localhost:50001/api/experts');
+        if (response.ok) {
+          experts = await response.json();
+          renderExpertSelector();
+        }
+      } catch (error) {
+        console.error('Failed to load experts:', error);
+      }
+    }
+
+    // Render expert selector
+    function renderExpertSelector() {
+      const dropdown = document.getElementById('expertDropdown');
+
+      dropdown.innerHTML = `
+        <div class="custom-select-option ${selectedExpert === '' ? 'selected' : ''}" data-value="" onclick="selectExpert('')">
+          <span>无 - 通用助手</span>
+          <i data-lucide="check" class="custom-select-option-check"></i>
+        </div>
+      `;
+
+      experts.forEach(expert => {
+        const option = document.createElement('div');
+        option.className = `custom-select-option ${selectedExpert === expert.id ? 'selected' : ''}`;
+        option.dataset.value = expert.id;
+        option.onclick = () => selectExpert(expert.id);
+        option.innerHTML = `
+          <span>${escapeHtml(expert.name)}</span>
+          <i data-lucide="check" class="custom-select-option-check"></i>
+        `;
+        dropdown.appendChild(option);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded fired');
+
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // Initialize custom selects
+      initCustomSelects();
+
+      loadSkills();
+      loadExperts();
+      refreshTaskList();
+      loadModelConfig();
+
+      // 启动上下文监控
+      startContextMonitoring();
+
+      // 添加回车发送功能
+      const instructionInput = document.getElementById('instruction');
+      if (instructionInput) {
+        instructionInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            runTask();
+          }
+        });
+      }
+
+      // 绑定 API 提供商选择器
+      const apiProvider = document.getElementById('apiProvider');
+      if (apiProvider) {
+        apiProvider.addEventListener('change', updateProviderFields);
+        console.log('apiProvider change event bound');
+      }
+
+      // 绑定设置页面的按钮事件
+      console.log('Looking for buttons...');
+      console.log('All buttons:', document.querySelectorAll('button').length);
+
+      const saveModelConfigBtn = document.getElementById('saveModelConfigBtn');
+      console.log('saveModelConfigBtn:', saveModelConfigBtn);
+      if (saveModelConfigBtn) {
+        saveModelConfigBtn.addEventListener('click', () => {
+          console.log('Save button clicked');
+          saveModelConfig();
+        });
+        console.log('saveModelConfig button found and bound');
+      } else {
+        console.error('saveModelConfigBtn not found!');
+      }
+
+      const testModelConfigBtn = document.getElementById('testModelConfigBtn');
+      console.log('testModelConfigBtn:', testModelConfigBtn);
+      if (testModelConfigBtn) {
+        testModelConfigBtn.addEventListener('click', () => {
+          console.log('Test button clicked');
+          testModelConfig();
+        });
+        console.log('testModelConfig button found and bound');
+      } else {
+        console.error('testModelConfigBtn not found!');
+      }
+
+      const saveWorkspaceConfigBtn = document.getElementById('saveWorkspaceConfigBtn');
+      console.log('saveWorkspaceConfigBtn:', saveWorkspaceConfigBtn);
+      if (saveWorkspaceConfigBtn) {
+        saveWorkspaceConfigBtn.addEventListener('click', () => {
+          console.log('Save workspace button clicked');
+          saveWorkspaceConfig();
+        });
+        console.log('saveWorkspaceConfig button found and bound');
+      } else {
+        console.error('saveWorkspaceConfigBtn not found!');
+      }
+
+      // 确保所有输入框支持粘贴
+      document.querySelectorAll('input, textarea').forEach(element => {
+        element.addEventListener('paste', (e) => {
+          // 允许默认粘贴行为
+          return true;
+        });
+
+        // 添加 Ctrl+V / Cmd+V 支持
+        element.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+            // 不阻止默认行为，让浏览器处理粘贴
+            console.log('Paste shortcut detected on', element.id || element.tagName);
+          }
+        });
+      });
+
+      console.log('Page initialized successfully');
+    });
+
+    // Skill management functions
+    function showCreateSkillForm() {
+      document.getElementById('createSkillForm').classList.remove('hidden');
+      document.getElementById('skillPreview').classList.add('hidden');
+      document.getElementById('skillDescription').value = '';
+      document.getElementById('skillYamlPreview').textContent = '';
+    }
+
+    function hideCreateSkillForm() {
+      document.getElementById('createSkillForm').classList.add('hidden');
+    }
+
+    function showInstallSkillForm() {
+      document.getElementById('installSkillForm').classList.remove('hidden');
+      document.getElementById('skillSecurityPreview').classList.add('hidden');
+      document.getElementById('skillUrl').value = '';
+    }
+
+    function hideInstallSkillForm() {
+      document.getElementById('installSkillForm').classList.add('hidden');
+    }
+
+    let generatedSkillYaml = '';
+
+    async function generateSkill() {
+      const description = document.getElementById('skillDescription').value.trim();
+      if (!description) {
+        alert('请输入技能描述');
+        return;
+      }
+
+      const generateBtn = document.getElementById('generateSkillBtn');
+      const preview = document.getElementById('skillPreview');
+      const yamlPreview = document.getElementById('skillYamlPreview');
+
+      generateBtn.disabled = true;
+      generateBtn.textContent = '生成中...';
+      yamlPreview.textContent = '正在调用 AI 生成技能定义...\n';
+
+      try {
+        const response = await fetch('http://localhost:50001/api/skills/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          generatedSkillYaml = result.yaml;
+          yamlPreview.textContent = result.yaml;
+          preview.classList.remove('hidden');
+        } else {
+          yamlPreview.textContent = '生成失败: ' + result.error;
+          preview.classList.remove('hidden');
+        }
+      } catch (error) {
+        yamlPreview.textContent = '错误: ' + error.message;
+        preview.classList.remove('hidden');
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '生成技能';
+      }
+    }
+
+    async function saveSkill() {
+      if (!generatedSkillYaml) {
+        alert('没有可保存的技能');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:50001/api/skills/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ yaml: generatedSkillYaml })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('技能保存成功！');
+          hideCreateSkillForm();
+          await loadSkills();
+          renderSkillsGrid();
+        } else {
+          alert('保存失败: ' + result.error);
+        }
+      } catch (error) {
+        alert('错误: ' + error.message);
+      }
+    }
+
+    function renderSkillsGrid() {
+      const grid = document.getElementById('skillsGrid');
+
+      if (skills.length === 0) {
+        grid.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">暂无技能</div>';
+        return;
+      }
+
+      grid.innerHTML = skills.map(skill => `
+        <div class="grid-item">
+          <h4>${escapeHtml(skill.name)}</h4>
+          <p>${escapeHtml(skill.description)}</p>
+          <div class="tags">
+            <span class="tag">${skill.effort}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    let previewedSkillData = null;
+
+    async function previewSkill() {
+      const url = document.getElementById('skillUrl').value.trim();
+      if (!url) {
+        alert('请输入技能 URL 或路径');
+        return;
+      }
+
+      const previewBtn = document.getElementById('previewSkillBtn');
+      const preview = document.getElementById('skillSecurityPreview');
+
+      previewBtn.disabled = true;
+      previewBtn.textContent = '加载中...';
+
+      try {
+        const response = await fetch('http://localhost:50001/api/skills/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          previewedSkillData = result.data;
+
+          document.getElementById('previewName').textContent = result.data.name;
+          document.getElementById('previewDescription').textContent = result.data.description;
+
+          const toolsDiv = document.getElementById('previewTools');
+          toolsDiv.innerHTML = result.data.allowedTools.map(tool =>
+            `<span class="tag">${escapeHtml(tool)}</span>`
+          ).join('');
+
+          const hooksDiv = document.getElementById('previewHooks');
+          if (result.data.hooks && (result.data.hooks.pre_invoke || result.data.hooks.post_invoke)) {
+            hooksDiv.innerHTML = `
+              ${result.data.hooks.pre_invoke ? '<div style="font-size: 12px; color: #d93025;">• pre_invoke: ' + escapeHtml(result.data.hooks.pre_invoke) + '</div>' : ''}
+              ${result.data.hooks.post_invoke ? '<div style="font-size: 12px; color: #d93025;">• post_invoke: ' + escapeHtml(result.data.hooks.post_invoke) + '</div>' : ''}
+            `;
+          } else {
+            hooksDiv.innerHTML = '<span style="color: #999; font-size: 12px;">无</span>';
+          }
+
+          preview.classList.remove('hidden');
+        } else {
+          alert('预览失败: ' + result.error);
+        }
+      } catch (error) {
+        alert('错误: ' + error.message);
+      } finally {
+        previewBtn.disabled = false;
+        previewBtn.textContent = '预览技能';
+      }
+    }
+
+    async function installSkill() {
+      if (!previewedSkillData) {
+        alert('没有可安装的技能');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:50001/api/skills/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: previewedSkillData })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('技能安装成功！');
+          hideInstallSkillForm();
+          await loadSkills();
+          renderSkillsGrid();
+        } else {
+          alert('安装失败: ' + result.error);
+        }
+      } catch (error) {
+        alert('错误: ' + error.message);
+      }
+    }
+
+    // Load tasks from backend
+    async function refreshTaskList() {
+      try {
+        const response = await fetch('http://localhost:50001/api/tasks');
+        if (response.ok) {
+          tasks = await response.json();
+          renderTaskList();
+        }
+      } catch (error) {
+        console.error('Failed to load tasks:', error);
+      }
+    }
+
+    // Render task list
+    function renderTaskList() {
+      const taskList = document.getElementById('taskList');
+      const searchTerm = document.getElementById('taskSearch').value.toLowerCase();
+      const filter = document.getElementById('taskFilter').value;
+
+      let filteredTasks = tasks.filter(task => {
+        const matchesSearch = task.instruction.toLowerCase().includes(searchTerm) ||
+                             task.mode.toLowerCase().includes(searchTerm);
+        const matchesFilter = filter === 'all' || task.status === filter;
+        return matchesSearch && matchesFilter;
+      });
+
+      if (filteredTasks.length === 0) {
+        taskList.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">暂无任务</div>';
+        return;
+      }
+
+      taskList.innerHTML = filteredTasks.map(task => `
+        <div class="task-item ${task.id === currentTaskId ? 'active' : ''}" onclick="loadTask('${task.id}')">
+          <div class="task-title">${escapeHtml(task.instruction.substring(0, 50))}${task.instruction.length > 50 ? '...' : ''}</div>
+          <div class="task-meta">
+            <span class="status ${task.status}">${task.status}</span>
+            ${task.mode} · ${formatTime(task.createdAt)}
+            ${task.expertId ? '<br><span style="font-size: 10px; color: #4CAF50;">👤 ' + task.expertId + '</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Filter tasks
+    function filterTasks() {
+      renderTaskList();
+    }
+
+    // Load specific task
+    function loadTask(taskId) {
+      currentTaskId = taskId;
+      const task = tasks.find(t => t.id === taskId);
+
+      if (task) {
+        // 显示专家切换器
+        document.getElementById('expertSwitcher').classList.remove('hidden');
+
+        // 填充切换专家下拉框
+        const switchSelect = document.getElementById('switchExpertSelect');
+        switchSelect.innerHTML = '<option value="">无 - 通用助手</option>';
+        experts.forEach(expert => {
+          const option = document.createElement('option');
+          option.value = expert.id;
+          option.textContent = `${expert.name} - ${expert.role}`;
+          if (task.expertId === expert.id) {
+            option.selected = true;
+          }
+          switchSelect.appendChild(option);
+        });
+      } else {
+        document.getElementById('expertSwitcher').classList.add('hidden');
+      }
+
+      renderTaskList();
+    }
+
+    async function switchExpert() {
+      if (!currentTaskId) {
+        alert('请先选择一个任务');
+        return;
+      }
+
+      const expertId = document.getElementById('switchExpertSelect').value;
+
+      try {
+        const response = await fetch('http://localhost:50001/api/tasks/switch-expert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: currentTaskId, expertId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('专家切换成功！');
+          await refreshTaskList();
+        } else {
+          alert('切换失败: ' + result.error);
+        }
+      } catch (error) {
+        alert('错误: ' + error.message);
+      }
+    }
+
+    // Utility functions
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatTime(timestamp) {
+      if (!timestamp) return '刚刚';
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+
+      if (diff < 60000) return '刚刚';
+      if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+      if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+      return Math.floor(diff / 86400000) + '天前';
+    }
+
+    // Page switching
+    document.querySelectorAll('.nav-item').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = link.dataset.page;
+
+        // 更新激活状态
+        document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
+        link.classList.add('active');
+
+        // 显示对应页面
+        document.querySelectorAll('[id$="-page"]').forEach(p => {
+          p.classList.add('hidden');
+          p.style.display = 'none';
+        });
+        const targetPage = document.getElementById(page + '-page');
+        targetPage.classList.remove('hidden');
+        targetPage.style.display = 'flex';
+
+        // 如果切换到技能页面，渲染技能列表
+        if (page === 'skills') {
+          renderSkillsGrid();
+        }
+
+        // 如果切换到记忆页面，加载记忆列表
+        if (page === 'memory') {
+          loadMemories();
+        }
+
+        // 如果切换到专家页面，渲染专家列表
+        if (page === 'experts') {
+          renderExpertsGrid();
+        }
+      });
+    });
+
+    // 执行任务
+    async function runTask() {
+      const mode = document.getElementById('mode').value;
+      const workspace = document.getElementById('workspace').value;
+      const instruction = document.getElementById('instruction').value;
+      const skill = selectedSkill;
+      const expertId = selectedExpert;
+
+      if (!instruction.trim()) {
+        alert('请输入任务指令');
+        return;
+      }
+
+      const runBtn = document.getElementById('runBtn');
+      const chatContainer = document.getElementById('chatContainer');
+      const emptyState = chatContainer.querySelector('.empty-state');
+
+      // 隐藏空状态
+      if (emptyState) {
+        emptyState.style.display = 'none';
+      }
+
+      // 添加用户消息
+      addMessage('user', instruction);
+
+      // 清空输入框
+      document.getElementById('instruction').value = '';
+
+      // 禁用按钮
+      runBtn.disabled = true;
+      runBtn.innerHTML = '<i data-lucide="loader-2" style="animation: spin 1s linear infinite;"></i>';
+      lucide.createIcons();
+
+      // 添加助手思考消息
+      const assistantMsg = addMessage('assistant', '');
+      const assistantContent = assistantMsg.querySelector('.message-content');
+
+      try {
+        // 使用流式 API
+        const response = await fetch('http://localhost:50001/api/task/execute-stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            mode: mode,
+            workspace: workspace,
+            instruction: instruction,
+            skill: skill || undefined,
+            expertId: expertId || undefined
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  fullText += parsed.content;
+                  assistantContent.textContent = fullText;
+                  // 滚动到底部
+                  chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else if (parsed.error) {
+                  assistantContent.textContent = '❌ 错误: ' + parsed.error;
+                }
+              } catch (e) {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+
+        if (!fullText) {
+          assistantContent.textContent = '❌ 没有收到响应';
+        }
+
+        // 更新上下文使用率
+        updateContextUsage();
+      } catch (error) {
+        assistantMsg.remove();
+        addMessage('assistant', '❌ 错误: ' + error.message);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.innerHTML = '<i data-lucide="arrow-up"></i>';
+        lucide.createIcons();
+        await refreshTaskList();
+      }
+    }
+
+    // 添加消息到聊天容器
+    function addMessage(role, content) {
+      const chatContainer = document.getElementById('chatContainer');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+      messageDiv.dataset.content = content; // 存储原始内容
+
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.innerHTML = role === 'user'
+        ? '<i data-lucide="user" style="width: 18px; height: 18px;"></i>'
+        : '<i data-lucide="bot" style="width: 18px; height: 18px;"></i>';
+
+      const contentDiv = document.createElement('div');
+      contentDiv.style.flex = '1';
+
+      const messageContent = document.createElement('div');
+      messageContent.className = 'message-content';
+
+      // 处理内容格式
+      if (content.includes('\n') || content.includes('{')) {
+        const parts = content.split(/```/);
+        if (parts.length > 1) {
+          // 有代码块
+          messageContent.innerHTML = parts.map((part, i) => {
+            if (i % 2 === 1) {
+              return `<pre>${escapeHtml(part)}</pre>`;
+            }
+            return escapeHtml(part).replace(/\n/g, '<br>');
+          }).join('');
+        } else {
+          messageContent.innerHTML = escapeHtml(content).replace(/\n/g, '<br>');
+        }
+      } else {
+        messageContent.textContent = content;
+      }
+
+      contentDiv.appendChild(messageContent);
+
+      // 为助手消息添加"添加到记忆"按钮
+      if (role === 'assistant') {
+        const actionsDiv = document.createElement('div');
+        actionsDiv.style.cssText = 'display: flex; gap: 8px; margin-top: 8px; opacity: 0.6; transition: opacity 0.2s;';
+        actionsDiv.onmouseenter = () => actionsDiv.style.opacity = '1';
+        actionsDiv.onmouseleave = () => actionsDiv.style.opacity = '0.6';
+
+        const addToMemoryBtn = document.createElement('button');
+        addToMemoryBtn.className = 'icon-btn';
+        addToMemoryBtn.title = '添加到记忆';
+        addToMemoryBtn.innerHTML = '<i data-lucide="brain" style="width: 14px; height: 14px;"></i>';
+        addToMemoryBtn.onclick = () => showAddToMemoryDialog(content);
+
+        actionsDiv.appendChild(addToMemoryBtn);
+        contentDiv.appendChild(actionsDiv);
+      }
+
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(contentDiv);
+      chatContainer.appendChild(messageDiv);
+
+      // 滚动到底部
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      // 初始化图标
+      lucide.createIcons();
+
+      return messageDiv;
+    }
+
+    // Expert management functions
+    function showCreateExpertForm() {
+      document.getElementById('createExpertForm').classList.remove('hidden');
+      document.getElementById('expertPreview').classList.add('hidden');
+      document.getElementById('expertDescription').value = '';
+    }
+
+    function hideCreateExpertForm() {
+      document.getElementById('createExpertForm').classList.add('hidden');
+    }
+
+    let generatedExpertData = null;
+
+    async function generateExpert() {
+      const description = document.getElementById('expertDescription').value.trim();
+      if (!description) {
+        alert('请输入专家描述');
+        return;
+      }
+
+      const generateBtn = document.getElementById('generateExpertBtn');
+      const preview = document.getElementById('expertPreview');
+
+      generateBtn.disabled = true;
+      generateBtn.textContent = '生成中...';
+
+      try {
+        const response = await fetch('http://localhost:50001/api/experts/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          generatedExpertData = result.expert;
+          document.getElementById('expertName').value = result.expert.name;
+          document.getElementById('expertRole').value = result.expert.role;
+          document.getElementById('expertExpertise').value = result.expert.expertise.join(',');
+          document.getElementById('expertPrompt').value = result.expert.promptTemplate;
+          preview.classList.remove('hidden');
+        } else {
+          alert('生成失败: ' + result.error);
+        }
+      } catch (error) {
+        alert('错误: ' + error.message);
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '生成专家';
+      }
+    }
+
+    async function saveExpert() {
+      const name = document.getElementById('expertName').value.trim();
+      const role = document.getElementById('expertRole').value.trim();
+      const expertise = document.getElementById('expertExpertise').value.split(',').map(e => e.trim()).filter(e => e);
+      const promptTemplate = document.getElementById('expertPrompt').value.trim();
+
+      if (!name || !role || expertise.length === 0 || !promptTemplate) {
+        alert('请填写所有字段');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:50001/api/experts/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, role, expertise, promptTemplate })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('专家创建成功！');
+          hideCreateExpertForm();
+          await loadExperts();
+          renderExpertsGrid();
+        } else {
+          alert('创建失败: ' + result.error);
+        }
+      } catch (error) {
+        alert('错误: ' + error.message);
+      }
+    }
+
+    function renderExpertsGrid() {
+      const grid = document.getElementById('expertsGrid');
+
+      if (experts.length === 0) {
+        grid.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">暂无专家</div>';
+        return;
+      }
+
+      grid.innerHTML = experts.map(expert => `
+        <div class="grid-item">
+          <h4>${escapeHtml(expert.name)}</h4>
+          <p>${escapeHtml(expert.role)}</p>
+          <div class="tags">
+            ${expert.expertise.map(e => `<span class="tag">${escapeHtml(e)}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Model configuration functions
+    function updateProviderFields() {
+      const provider = document.getElementById('apiProvider').value;
+      const endpointGroup = document.getElementById('apiEndpointGroup');
+      const protocolGroup = document.getElementById('apiProtocolGroup');
+      const modelName = document.getElementById('modelName');
+
+      if (provider === 'custom') {
+        endpointGroup.style.display = 'block';
+        protocolGroup.style.display = 'block';
+      } else {
+        endpointGroup.style.display = 'none';
+        protocolGroup.style.display = 'none';
+      }
+
+      // 设置默认模型名称
+      if (provider === 'openai') {
+        modelName.placeholder = 'gpt-4-turbo';
+      } else if (provider === 'anthropic') {
+        modelName.placeholder = 'claude-3-5-sonnet-20241022';
+      } else {
+        modelName.placeholder = '输入模型名称';
+      }
+    }
+
+    async function saveModelConfig() {
+      console.log('saveModelConfig called');
+      const config = {
+        provider: document.getElementById('apiProvider').value,
+        apiKey: document.getElementById('apiKey').value,
+        modelName: document.getElementById('modelName').value,
+        apiEndpoint: document.getElementById('apiEndpoint').value,
+        apiProtocol: document.getElementById('apiProtocol').value,
+        temperature: parseFloat(document.getElementById('temperature').value),
+        maxTokens: parseInt(document.getElementById('maxTokens').value)
+      };
+
+      console.log('Config:', config);
+
+      const saveBtn = document.getElementById('saveModelConfigBtn');
+      const originalText = saveBtn.textContent;
+      saveBtn.textContent = '保存中...';
+      saveBtn.disabled = true;
+
+      try {
+        const response = await fetch('http://localhost:50001/api/config/model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+
+        const result = await response.json();
+        console.log('Result:', result);
+
+        if (result.success) {
+          showTestResult('✅ 模型配置保存成功！', true);
+        } else {
+          showTestResult('❌ 保存失败：' + result.error, false);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showTestResult('❌ 错误：' + error.message, false);
+      } finally {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+      }
+    }
+
+    async function testModelConfig() {
+      console.log('testModelConfig called');
+      const config = {
+        provider: document.getElementById('apiProvider').value,
+        apiKey: document.getElementById('apiKey').value,
+        modelName: document.getElementById('modelName').value,
+        apiEndpoint: document.getElementById('apiEndpoint').value,
+        apiProtocol: document.getElementById('apiProtocol').value
+      };
+
+      if (!config.apiKey) {
+        showTestResult('请先输入 API Key', false);
+        return;
+      }
+
+      console.log('Testing config:', config);
+
+      const testBtn = document.getElementById('testModelConfigBtn');
+      const originalText = testBtn.textContent;
+      testBtn.textContent = '测试中...';
+      testBtn.disabled = true;
+
+      try {
+        const response = await fetch('http://localhost:50001/api/config/model/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+
+        const result = await response.json();
+        console.log('Test result:', result);
+
+        if (result.success) {
+          showTestResult('✅ ' + result.message, true);
+        } else {
+          showTestResult('❌ 连接测试失败：' + result.error, false);
+        }
+      } catch (error) {
+        console.error('Test error:', error);
+        showTestResult('❌ 错误：' + error.message, false);
+      } finally {
+        testBtn.textContent = originalText;
+        testBtn.disabled = false;
+      }
+    }
+
+    function showTestResult(message, success) {
+      const resultDiv = document.getElementById('testResult');
+      resultDiv.textContent = message;
+      resultDiv.style.display = 'block';
+      resultDiv.style.background = success ? '#e8f5e9' : '#ffebee';
+      resultDiv.style.color = success ? '#2e7d32' : '#c62828';
+      resultDiv.style.border = success ? '1px solid #a5d6a7' : '1px solid #ef9a9a';
+
+      // 3秒后自动隐藏
+      setTimeout(() => {
+        resultDiv.style.display = 'none';
+      }, 3000);
+    }
+
+    async function saveWorkspaceConfig() {
+      const workspace = document.getElementById('defaultWorkspace').value;
+
+      try {
+        const response = await fetch('http://localhost:50001/api/config/workspace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspace })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('工作目录配置保存成功！');
+          document.getElementById('workspace').value = workspace;
+        } else {
+          alert('保存失败: ' + result.error);
+        }
+      } catch (error) {
+        alert('错误: ' + error.message);
+      }
+    }
+
+    async function loadModelConfig() {
+      try {
+        const response = await fetch('http://localhost:50001/api/config/model');
+        if (response.ok) {
+          const config = await response.json();
+          if (config.provider) {
+            document.getElementById('apiProvider').value = config.provider;
+            document.getElementById('apiKey').value = config.apiKey || '';
+            document.getElementById('modelName').value = config.modelName || '';
+            document.getElementById('apiEndpoint').value = config.apiEndpoint || '';
+            document.getElementById('apiProtocol').value = config.apiProtocol || 'openai';
+            document.getElementById('temperature').value = config.temperature || 0.7;
+            document.getElementById('maxTokens').value = config.maxTokens || 4096;
+            updateProviderFields();
+          }
+        }
+
+        const workspaceResponse = await fetch('http://localhost:50001/api/config/workspace');
+        if (workspaceResponse.ok) {
+          const workspaceConfig = await workspaceResponse.json();
+          if (workspaceConfig.workspace) {
+            document.getElementById('defaultWorkspace').value = workspaceConfig.workspace;
+            document.getElementById('workspace').value = workspaceConfig.workspace;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load config:', error);
+      }
+    }
+
+    async function clearConversation() {
+      if (!confirm('确定要清除对话历史吗？')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:50001/api/conversation/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          // 清空聊天容器
+          const chatContainer = document.getElementById('chatContainer');
+          chatContainer.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+              <h2>开始构建</h2>
+              <p>在下方输入你的需求，开始创建任务</p>
+            </div>
+          `;
+          showNotification('对话历史已清除', 'success');
+        } else {
+          showNotification('清除失败', 'error');
+        }
+      } catch (error) {
+        console.error('Clear conversation error:', error);
+        showNotification('错误: ' + error.message, 'error');
+      }
+    }
+
+    async function extractMemories() {
+      if (!confirm('确定要从当前对话中提取记忆吗？这将使用 AI 分析对话内容并创建长期记忆。')) {
+        return;
+      }
+
+      // Show loading notification
+      const loadingNotif = document.createElement('div');
+      loadingNotif.id = 'extract-loading';
+      loadingNotif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: #8b5cf6;
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      `;
+      loadingNotif.innerHTML = '<div style="width: 16px; height: 16px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>正在提取记忆...';
+      document.body.appendChild(loadingNotif);
+
+      try {
+        const response = await fetch('http://localhost:50001/api/memory/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+        loadingNotif.remove();
+
+        if (result.success) {
+          showNotification(`记忆提取成功！创建了 ${result.created} 个记忆，跳过了 ${result.skipped} 个重复记忆`, 'success');
+
+          if (result.errors && result.errors.length > 0) {
+            console.warn('提取过程中的错误:', result.errors);
+          }
+        } else {
+          showNotification('提取失败: ' + (result.errors?.[0] || '未知错误'), 'error');
+        }
+      } catch (error) {
+        loadingNotif.remove();
+        console.error('Extract memories error:', error);
+        showNotification('提取失败: ' + error.message, 'error');
+      }
+    }
+
+    async function compressConversation() {
+      if (!confirm('确定要压缩对话历史吗？这将使用 AI 生成摘要来减少 token 使用。')) {
+        return;
+      }
+
+      // Show loading notification
+      const loadingNotif = document.createElement('div');
+      loadingNotif.id = 'compress-loading';
+      loadingNotif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: #3b82f6;
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      `;
+      loadingNotif.innerHTML = '<div style="width: 16px; height: 16px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>正在压缩对话...';
+      document.body.appendChild(loadingNotif);
+
+      try {
+        const response = await fetch('http://localhost:50001/api/conversation/compress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ manual: true })
+        });
+
+        const result = await response.json();
+        loadingNotif.remove();
+
+        if (result.success) {
+          showNotification(`压缩成功！使用 ${result.strategy} 策略，节省了 ${result.tokensSaved} tokens`, 'success');
+
+          // Add compression marker to chat
+          const chatContainer = document.getElementById('chatContainer');
+          const marker = document.createElement('div');
+          marker.style.cssText = `
+            padding: 12px;
+            margin: 16px 0;
+            background: #f0f9ff;
+            border-left: 3px solid #3b82f6;
+            border-radius: 4px;
+            color: #1e40af;
+            font-size: 13px;
+            text-align: center;
+          `;
+          marker.textContent = `📦 对话已压缩 - 使用率: ${result.usage?.toFixed(1)}%`;
+          chatContainer.appendChild(marker);
+        } else {
+          showNotification('压缩失败: ' + (result.error || '未知错误'), 'error');
+        }
+      } catch (error) {
+        loadingNotif.remove();
+        console.error('Compress conversation error:', error);
+        showNotification('压缩失败: ' + error.message, 'error');
+      }
+    }
+
+    // Context Usage Indicator
+    let contextUsageInterval = null;
+    let currentContextUsage = 0;
+
+    async function updateContextUsage() {
+      try {
+        const response = await fetch('http://localhost:50001/api/conversation/usage');
+        const result = await response.json();
+
+        if (result.success && typeof result.usage === 'number') {
+          currentContextUsage = result.usage;
+          updateContextIndicator(result.usage);
+        }
+      } catch (error) {
+        console.error('Failed to fetch context usage:', error);
+      }
+    }
+
+    function startContextMonitoring() {
+      // 立即更新一次
+      updateContextUsage();
+
+      // 每 5 秒更新一次
+      if (contextUsageInterval) {
+        clearInterval(contextUsageInterval);
+      }
+      contextUsageInterval = setInterval(updateContextUsage, 5000);
+    }
+
+    function stopContextMonitoring() {
+      if (contextUsageInterval) {
+        clearInterval(contextUsageInterval);
+        contextUsageInterval = null;
+      }
+    }
+
+    function updateContextIndicator(usage) {
+      const circle = document.getElementById('contextProgressCircle');
+      const tooltip = document.getElementById('contextTooltip');
+
+      if (!circle || !tooltip) return;
+
+      // 计算圆环进度（周长 = 2 * π * r = 2 * 3.14159 * 12 ≈ 75.4）
+      const circumference = 75.4;
+      const offset = circumference - (usage / 100) * circumference;
+
+      circle.style.strokeDashoffset = offset;
+
+      // 根据使用率改变颜色
+      let color = '#10b981'; // 绿色
+      if (usage >= 85) {
+        color = '#ef4444'; // 红色
+      } else if (usage >= 70) {
+        color = '#f59e0b'; // 黄色
+      }
+      circle.style.stroke = color;
+
+      // 更新 tooltip
+      tooltip.textContent = `${usage.toFixed(1)}%`;
+    }
+
+    async function handleContextClick() {
+      if (currentContextUsage < 70) {
+        showNotification('上下文使用率较低，暂不需要压缩', 'info');
+        return;
+      }
+
+      if (!confirm(`当前上下文使用率: ${currentContextUsage.toFixed(1)}%\n\n确定要压缩对话历史吗？`)) {
+        return;
+      }
+
+      // 复用现有的压缩逻辑
+      await compressConversation();
+
+      // 压缩后立即更新显示
+      setTimeout(updateContextUsage, 1000);
+    }
+
+    // Memory Management Functions
+    let memories = [];
+    let filteredMemories = [];
+
+    // Text selection detection for quick memory creation
+    let selectedText = '';
+    document.addEventListener('mouseup', () => {
+      const selection = window.getSelection();
+      selectedText = selection.toString().trim();
+    });
+
+    // Show add to memory dialog with smart suggestions
+    function showAddToMemoryDialog(content = null) {
+      const textToSave = content || selectedText;
+      if (!textToSave) {
+        showNotification('请先选择要保存的文本', 'error');
+        return;
+      }
+
+      // Suggest memory type based on content
+      const suggestedType = suggestMemoryType(textToSave);
+
+      // Generate memory name
+      const suggestedName = generateMemoryName(textToSave);
+
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+      modal.innerHTML = `
+        <div class="card" style="width: 600px; max-width: 90%; max-height: 90vh; overflow-y: auto;">
+          <h3 style="margin-bottom: 20px;">添加到记忆</h3>
+          <div class="form-group">
+            <label>类型 <span style="color: #3b82f6; font-size: 12px;">(建议: ${getTypeLabel(suggestedType)})</span></label>
+            <select id="quickMemoryType">
+              <option value="user" ${suggestedType === 'user' ? 'selected' : ''}>用户信息</option>
+              <option value="feedback" ${suggestedType === 'feedback' ? 'selected' : ''}>反馈建议</option>
+              <option value="project" ${suggestedType === 'project' ? 'selected' : ''}>项目信息</option>
+              <option value="reference" ${suggestedType === 'reference' ? 'selected' : ''}>参考资料</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>名称</label>
+            <input type="text" id="quickMemoryName" value="${escapeHtml(suggestedName)}" placeholder="例如：我的角色">
+          </div>
+          <div class="form-group">
+            <label>描述</label>
+            <input type="text" id="quickMemoryDescription" placeholder="简短描述这个记忆的内容">
+          </div>
+          <div class="form-group">
+            <label>内容</label>
+            <textarea id="quickMemoryContent" rows="8">${escapeHtml(textToSave)}</textarea>
+          </div>
+          <div id="duplicateWarning" style="display: none; padding: 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; margin-bottom: 12px; font-size: 13px; color: #92400e;">
+            ⚠️ 可能存在相似的记忆
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="this.closest('div[style*=fixed]').remove()">取消</button>
+            <button class="btn" onclick="createQuickMemory()">保存</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Check for duplicates
+      checkDuplicateMemory(textToSave);
+    }
+
+    // Suggest memory type based on content keywords
+    function suggestMemoryType(content) {
+      const lower = content.toLowerCase();
+
+      // User-related keywords
+      if (lower.match(/我是|我的|我会|我喜欢|我擅长|我负责/)) {
+        return 'user';
+      }
+
+      // Feedback-related keywords
+      if (lower.match(/建议|不要|应该|最好|推荐|避免|记住/)) {
+        return 'feedback';
+      }
+
+      // Project-related keywords
+      if (lower.match(/项目|任务|功能|需求|开发|实现|计划/)) {
+        return 'project';
+      }
+
+      // Default to reference
+      return 'reference';
+    }
+
+    // Generate memory name from content (kebab-case)
+    function generateMemoryName(content) {
+      // Take first sentence or first 50 chars
+      let name = content.split(/[。！？\n]/)[0].substring(0, 50);
+
+      // Remove common prefixes
+      name = name.replace(/^(我是|我的|关于|这是|请记住|记住)/g, '').trim();
+
+      // Convert to title case
+      if (name.length > 20) {
+        name = name.substring(0, 20) + '...';
+      }
+
+      return name || '新记忆';
+    }
+
+    // Get type label in Chinese
+    function getTypeLabel(type) {
+      const labels = {
+        user: '用户信息',
+        feedback: '反馈建议',
+        project: '项目信息',
+        reference: '参考资料'
+      };
+      return labels[type] || '参考资料';
+    }
+
+    // Check for duplicate memories
+    async function checkDuplicateMemory(content) {
+      const similar = memories.filter(m => {
+        const similarity = calculateSimilarity(m.content, content);
+        return similarity > 0.7; // 70% similarity threshold
+      });
+
+      if (similar.length > 0) {
+        const warning = document.getElementById('duplicateWarning');
+        if (warning) {
+          warning.style.display = 'block';
+          warning.innerHTML = `⚠️ 发现 ${similar.length} 个相似的记忆：${similar.map(m => m.metadata.name).join(', ')}`;
+        }
+      }
+    }
+
+    // Simple similarity calculation (Jaccard similarity)
+    function calculateSimilarity(str1, str2) {
+      const words1 = new Set(str1.toLowerCase().split(/\s+/));
+      const words2 = new Set(str2.toLowerCase().split(/\s+/));
+
+      const intersection = new Set([...words1].filter(x => words2.has(x)));
+      const union = new Set([...words1, ...words2]);
+
+      return intersection.size / union.size;
+    }
+
+    // Create memory from quick dialog
+    async function createQuickMemory() {
+      const type = document.getElementById('quickMemoryType').value;
+      const name = document.getElementById('quickMemoryName').value.trim();
+      const description = document.getElementById('quickMemoryDescription').value.trim();
+      const content = document.getElementById('quickMemoryContent').value.trim();
+
+      if (!name || !description || !content) {
+        showNotification('请填写所有字段', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:50001/api/memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, name, description, content })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          document.querySelector('div[style*=fixed]').remove();
+          showNotification('记忆创建成功', 'success');
+
+          // Reload memories if on memory page
+          if (document.getElementById('memory-page').style.display !== 'none') {
+            loadMemories();
+          }
+        } else {
+          showNotification('创建失败: ' + result.error, 'error');
+        }
+      } catch (error) {
+        console.error('Create memory error:', error);
+        showNotification('创建失败: ' + error.message, 'error');
+      }
+    }
+
+    // Notification system
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-size: 14px;
+        animation: slideIn 0.3s ease-out;
+      `;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    async function loadMemories(type = '') {
+      const grid = document.getElementById('memoriesGrid');
+      const emptyState = document.getElementById('memoryEmptyState');
+
+      // Show loading state
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;"><div style="width: 32px; height: 32px; border: 3px solid #f0f0f0; border-top-color: #666; border-radius: 50%; margin: 0 auto 12px; animation: spin 1s linear infinite;"></div>加载中...</div>';
+      grid.style.display = 'block';
+      emptyState.style.display = 'none';
+
+      try {
+        const url = type ? `http://localhost:50001/api/memory?type=${type}` : 'http://localhost:50001/api/memory';
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.success) {
+          memories = result.memories || [];
+          filteredMemories = memories;
+          renderMemoriesGrid();
+        } else {
+          showNotification('加载失败: ' + result.error, 'error');
+          grid.innerHTML = '';
+        }
+      } catch (error) {
+        console.error('Failed to load memories:', error);
+        showNotification('加载失败: ' + error.message, 'error');
+        grid.innerHTML = '';
+      }
+    }
+
+    function renderMemoriesGrid() {
+      const grid = document.getElementById('memoriesGrid');
+      const emptyState = document.getElementById('memoryEmptyState');
+
+      if (filteredMemories.length === 0) {
+        grid.style.display = 'none';
+        emptyState.style.display = 'block';
+        lucide.createIcons();
+        return;
+      }
+
+      grid.style.display = 'grid';
+      emptyState.style.display = 'none';
+
+      const typeColors = {
+        user: '#3b82f6',
+        feedback: '#10b981',
+        project: '#f59e0b',
+        reference: '#8b5cf6'
+      };
+
+      const typeLabels = {
+        user: '用户信息',
+        feedback: '反馈建议',
+        project: '项目信息',
+        reference: '参考资料'
+      };
+
+      grid.innerHTML = filteredMemories.map(memory => `
+        <div class="card" style="padding: 16px; cursor: pointer; transition: all 0.2s;" onclick="viewMemory('${memory.id}')">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <div style="display: inline-block; padding: 4px 8px; background: ${typeColors[memory.type]}20; color: ${typeColors[memory.type]}; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 8px;">
+                ${typeLabels[memory.type]}
+              </div>
+              <h4 style="font-size: 15px; margin-bottom: 6px;">${escapeHtml(memory.name)}</h4>
+              <p style="font-size: 13px; color: #666; margin-bottom: 8px;">${escapeHtml(memory.description)}</p>
+            </div>
+          </div>
+          <div style="font-size: 13px; color: #999; border-top: 1px solid #f0f0f0; padding-top: 12px; display: flex; justify-content: space-between;">
+            <span>更新: ${new Date(memory.updated).toLocaleDateString()}</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="icon-btn" onclick="event.stopPropagation(); editMemory('${memory.id}')" title="编辑">
+                <i data-lucide="edit-2" style="width: 14px; height: 14px;"></i>
+              </button>
+              <button class="icon-btn" onclick="event.stopPropagation(); deleteMemory('${memory.id}')" title="删除">
+                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function showCreateMemoryForm() {
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+      modal.innerHTML = `
+        <div class="card" style="width: 600px; max-width: 90%; max-height: 90vh; overflow-y: auto;">
+          <h3 style="margin-bottom: 20px;">创建记忆</h3>
+          <div class="form-group">
+            <label>类型</label>
+            <select id="newMemoryType">
+              <option value="user">用户信息</option>
+              <option value="feedback">反馈建议</option>
+              <option value="project">项目信息</option>
+              <option value="reference">参考资料</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>名称</label>
+            <input type="text" id="newMemoryName" placeholder="例如：我的角色">
+          </div>
+          <div class="form-group">
+            <label>描述</label>
+            <input type="text" id="newMemoryDescription" placeholder="简短描述这个记忆的内容">
+          </div>
+          <div class="form-group">
+            <label>内容</label>
+            <textarea id="newMemoryContent" rows="8" placeholder="记忆的详细内容..."></textarea>
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="this.closest('div[style*=fixed]').remove()">取消</button>
+            <button class="btn" onclick="createMemory()">创建</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    async function createMemory() {
+      const type = document.getElementById('newMemoryType').value;
+      const name = document.getElementById('newMemoryName').value.trim();
+      const description = document.getElementById('newMemoryDescription').value.trim();
+      const content = document.getElementById('newMemoryContent').value.trim();
+
+      if (!name || !description || !content) {
+        showNotification('请填写所有字段', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:50001/api/memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, name, description, content })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          document.querySelector('div[style*=fixed]').remove();
+          loadMemories();
+          showNotification('记忆创建成功', 'success');
+        } else {
+          showNotification('创建失败: ' + result.error, 'error');
+        }
+      } catch (error) {
+        console.error('Create memory error:', error);
+        showNotification('创建失败: ' + error.message, 'error');
+      }
+    }
+
+    function viewMemory(id) {
+      const memory = memories.find(m => m.id === id);
+      if (!memory) return;
+
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+      modal.innerHTML = `
+        <div class="card" style="width: 600px; max-width: 90%; max-height: 90vh; overflow-y: auto;">
+          <h3 style="margin-bottom: 20px;">${escapeHtml(memory.name)}</h3>
+          <p style="color: #666; margin-bottom: 16px;">${escapeHtml(memory.description)}</p>
+          <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; font-size: 13px; margin-bottom: 16px;">
+${escapeHtml(memory.content)}
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="this.closest('div[style*=fixed]').remove()">关闭</button>
+            <button class="btn" onclick="this.closest('div[style*=fixed]').remove(); editMemory('${memory.id}')">编辑</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    async function editMemory(id) {
+      const memory = memories.find(m => m.id === id);
+      if (!memory) return;
+
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+      modal.innerHTML = `
+        <div class="card" style="width: 600px; max-width: 90%; max-height: 90vh; overflow-y: auto;">
+          <h3 style="margin-bottom: 20px;">编辑记忆</h3>
+          <div class="form-group">
+            <label>类型</label>
+            <select id="editMemoryType">
+              <option value="user" ${memory.type === 'user' ? 'selected' : ''}>用户信息</option>
+              <option value="feedback" ${memory.type === 'feedback' ? 'selected' : ''}>反馈建议</option>
+              <option value="project" ${memory.type === 'project' ? 'selected' : ''}>项目信息</option>
+              <option value="reference" ${memory.type === 'reference' ? 'selected' : ''}>参考资料</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>名称</label>
+            <input type="text" id="editMemoryName" value="${escapeHtml(memory.name)}">
+          </div>
+          <div class="form-group">
+            <label>描述</label>
+            <input type="text" id="editMemoryDescription" value="${escapeHtml(memory.description)}">
+          </div>
+          <div class="form-group">
+            <label>内容</label>
+            <textarea id="editMemoryContent" rows="8">${escapeHtml(memory.content)}</textarea>
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="this.closest('div[style*=fixed]').remove()">取消</button>
+            <button class="btn" onclick="updateMemory('${id}')">保存</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    async function updateMemory(id) {
+      const type = document.getElementById('editMemoryType').value;
+      const name = document.getElementById('editMemoryName').value.trim();
+      const description = document.getElementById('editMemoryDescription').value.trim();
+      const content = document.getElementById('editMemoryContent').value.trim();
+
+      if (!name || !description || !content) {
+        showNotification('请填写所有字段', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:50001/api/memory/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, name, description, content })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          document.querySelector('div[style*=fixed]').remove();
+          loadMemories();
+          showNotification('记忆更新成功', 'success');
+        } else {
+          showNotification('更新失败: ' + result.error, 'error');
+        }
+      } catch (error) {
+        console.error('Update memory error:', error);
+        showNotification('更新失败: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteMemory(id) {
+      if (!confirm('确定要删除这个记忆吗？')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:50001/api/memory/${id}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          loadMemories();
+          showNotification('记忆已删除', 'success');
+        } else {
+          showNotification('删除失败: ' + result.error, 'error');
+        }
+      } catch (error) {
+        console.error('Delete memory error:', error);
+        showNotification('删除失败: ' + error.message, 'error');
+      }
+    }
+
+    // Memory search and filter
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('memorySearchInput');
+      const typeFilter = document.getElementById('memoryTypeFilter');
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.toLowerCase();
+          const type = typeFilter.value;
+
+          filteredMemories = memories.filter(m => {
+            const matchesSearch = !query ||
+              m.name.toLowerCase().includes(query) ||
+              m.description.toLowerCase().includes(query) ||
+              m.content.toLowerCase().includes(query);
+            const matchesType = !type || m.type === type;
+            return matchesSearch && matchesType;
+          });
+
+          renderMemoriesGrid();
+        });
+      }
+
+      if (typeFilter) {
+        typeFilter.addEventListener('change', (e) => {
+          const type = e.target.value;
+          const query = searchInput.value.toLowerCase();
+
+          filteredMemories = memories.filter(m => {
+            const matchesSearch = !query ||
+              m.name.toLowerCase().includes(query) ||
+              m.description.toLowerCase().includes(query) ||
+              m.content.toLowerCase().includes(query);
+            const matchesType = !type || m.type === type;
+            return matchesSearch && matchesType;
+          });
+
+          renderMemoriesGrid();
+        });
+      }
+
+      // ========== WebSocket 任务通知处理 ==========
+
+      /**
+       * 在聊天界面显示任务完成通知
+       */
+      function showTaskNotification(event) {
+        const chatContainer = document.getElementById('chatContainer');
+        if (!chatContainer) return;
+
+        // 移除空状态
+        const emptyState = chatContainer.querySelector('.empty-state');
+        if (emptyState) {
+          emptyState.remove();
+        }
+
+        // 创建通知消息
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message assistant';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = '<i data-lucide="bell"></i>';
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+
+        // 格式化通知内容
+        let notificationText = `**任务完成通知**\n\n`;
+        notificationText += `- 任务 ID: ${event.taskId}\n`;
+        if (event.taskName) {
+          notificationText += `- 任务名称: ${event.taskName}\n`;
+        }
+        if (event.duration) {
+          notificationText += `- 耗时: ${event.duration}ms\n`;
+        }
+        if (event.error) {
+          notificationText += `- 状态: ❌ 失败\n`;
+          notificationText += `- 错误: ${event.error}\n`;
+        } else {
+          notificationText += `- 状态: ✅ 成功\n`;
+          if (event.result) {
+            notificationText += `- 结果: ${JSON.stringify(event.result, null, 2)}\n`;
+          }
+        }
+
+        content.textContent = notificationText;
+
+        const time = document.createElement('div');
+        time.className = 'message-time';
+        time.textContent = new Date(event.timestamp).toLocaleTimeString();
+
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(content);
+        messageDiv.appendChild(time);
+
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // 初始化图标
+        if (window.lucide) {
+          lucide.createIcons();
+        }
+      }
+
+      /**
+       * 显示连接状态
+       */
+      function showConnectionStatus(connected) {
+        console.log('[WebSocket] 连接状态:', connected ? '已连接' : '已断开');
+        // 可以在这里添加 UI 状态指示器
+      }
+
+      // 注册 WebSocket 事件处理器
+      if (window.wsClient) {
+        // 监听任务完成事件
+        window.wsClient.on('task:complete', showTaskNotification);
+
+        // 监听连接状态变化
+        window.wsClient.on('connection', (data) => {
+          showConnectionStatus(data.connected);
+        });
+
+        // 监听通知消息
+        window.wsClient.on('notification', (data) => {
+          if (data.content) {
+            showTaskNotification({
+              taskId: 'notification',
+              taskName: data.title || '系统通知',
+              result: data.content,
+              timestamp: Date.now(),
+            });
+          }
+        });
+
+        console.log('[WebSocket] 事件处理器已注册');
+      }
+
+    });
+  </script>
+</body>
+</html>

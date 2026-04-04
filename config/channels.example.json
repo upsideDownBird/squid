@@ -1,0 +1,9 @@
+{
+  "channels": {
+    "webui": {
+      "enabled": true,
+      "port": 8080,
+      "heartbeatInterval": 30000
+    }
+  }
+}
