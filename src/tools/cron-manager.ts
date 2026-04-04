@@ -116,6 +116,9 @@ class CronManager {
         }
       });
 
+      // 启动定时任务
+      scheduledTask.start();
+
       this.tasks.set(taskId, { task: scheduledTask, info: taskInfo });
 
       return {

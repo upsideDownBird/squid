@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { cronManager } from './cron-manager';
 
 const CronCreateInputSchema = z.object({
-  cron_expression: z.string().describe('Cron 表达式（如 "0 * * * *" 表示每小时）'),
-  task_content: z.string().describe('任务内容描述')
+  cron_expression: z.string().describe('Cron 表达式，5个字段：分 时 日 月 星期。例如："33 22 * * *"表示每天22:33，"*/5 * * * *"表示每5分钟，"0 9 * * 1-5"表示工作日9点'),
+  task_content: z.string().describe('任务内容描述，这个内容会在定时触发时作为 prompt 发送给 AI 执行')
 });
 
 type CronCreateInput = z.infer<typeof CronCreateInputSchema>;
@@ -20,7 +20,7 @@ interface CronCreateOutput {
 
 export const CronCreateTool: Tool<typeof CronCreateInputSchema, CronCreateOutput> = {
   name: 'cron_create',
-  description: '创建定时任务。使用 cron 表达式指定执行时间。',
+  description: '创建定时任务。当用户要求"设置定时任务"、"定时执行"、"在某个时间执行"时使用此工具。需要将用户的时间描述转换为标准 cron 表达式（如 "33 22 * * *" 表示每天22:33，"*/5 * * * *" 表示每5分钟）。',
   inputSchema: CronCreateInputSchema,
   maxResultSizeChars: 10000,
 
