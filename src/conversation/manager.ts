@@ -1,5 +1,5 @@
 // Conversation history manager
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
 import { ConversationCompressor } from './compressor';
@@ -189,6 +189,20 @@ export class ConversationManager {
       // Reset extraction state
       await this.extractionStateManager.resetState(conversationId);
       this.extractionMarker.resetMarker(conversationId);
+    }
+  }
+
+  async deleteConversation(conversationId: string): Promise<boolean> {
+    try {
+      const filePath = join(this.configDir, `${conversationId}.json`);
+      this.conversations.delete(conversationId);
+      await rm(filePath, { force: true });
+      await this.extractionStateManager.resetState(conversationId);
+      await this.extractionMarker.resetMarker(conversationId);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      return false;
     }
   }
 

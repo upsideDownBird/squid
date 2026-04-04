@@ -1165,7 +1165,7 @@
             <div class="tooltip" id="contextTooltip">0%</div>
           </div>
 
-          <button class="icon-btn" onclick="clearConversation()" title="清除对话历史">
+          <button class="icon-btn" onclick="clearConversation()" title="删除当前会话">
             <i data-lucide="trash-2"></i>
           </button>
           <div class="custom-select" id="expertSelect">
@@ -2356,7 +2356,7 @@
       }
 
       taskList.innerHTML = filteredTasks.map(task => `
-        <div class="task-item ${task.id === currentThreadId ? 'active' : ''}" onclick="loadTask('${task.id}')">
+        <div class="task-item ${task.id === currentThreadId ? 'active' : ''}" data-thread-id="${escapeHtml(task.id)}" onclick="loadTask('${task.id}')">
           <div class="task-title">${escapeHtml(task.title || '新线程')}</div>
           <div class="task-meta">
             ${formatTime(task.updatedAt || task.createdAt)}
@@ -2472,6 +2472,7 @@
       if (workspaceInput) workspaceInput.value = value;
       if (defaultWorkspaceInput) defaultWorkspaceInput.value = value;
     }
+
 
     async function pickWorkspacePath() {
       const pickerBtn = document.getElementById('workspacePickerBtn');
@@ -3162,19 +3163,47 @@
       }
     }
 
+    function resolveThreadToDelete() {
+      if (currentThreadId) {
+        return tasks.find(task => task.id === currentThreadId) || { id: currentThreadId, title: '当前会话' };
+      }
+      const activeThreadNode = document.querySelector('#taskList .task-item.active');
+      if (activeThreadNode) {
+        const id = activeThreadNode.getAttribute('data-thread-id');
+        if (id) {
+          const matched = tasks.find(task => task.id === id);
+          return matched || { id, title: '当前会话' };
+        }
+      }
+      if (tasks.length === 1) {
+        return tasks[0];
+      }
+      return null;
+    }
+
     async function clearConversation() {
-      if (!confirm('确定要清除对话历史吗？')) {
+      const thread = resolveThreadToDelete();
+      if (!thread?.id) {
+        showNotification('请先在左侧选择要删除的会话', 'error');
+        return;
+      }
+
+      const title = (thread.title || '当前会话').trim();
+      if (!confirm(`确定要删除会话「${title}」吗？删除后不可恢复。`)) {
         return;
       }
 
       try {
-        const response = await fetch('http://localhost:50001/api/conversation/clear', {
+        const response = await fetch('http://localhost:50001/api/threads/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threadId: thread.id })
         });
 
         const result = await response.json();
         if (result.success) {
+          currentThreadId = null;
+          currentTaskId = null;
           // 清空聊天容器
           const chatContainer = document.getElementById('chatContainer');
           chatContainer.innerHTML = `
@@ -3184,12 +3213,13 @@
               <p>在下方输入你的需求，开始创建任务</p>
             </div>
           `;
-          showNotification('对话历史已清除', 'success');
+          await refreshTaskList();
+          showNotification('会话已删除', 'success');
         } else {
-          showNotification('清除失败', 'error');
+          showNotification('删除失败: ' + (result.error || '未知错误'), 'error');
         }
       } catch (error) {
-        console.error('Clear conversation error:', error);
+        console.error('Delete conversation error:', error);
         showNotification('错误: ' + error.message, 'error');
       }
     }

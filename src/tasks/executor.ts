@@ -209,7 +209,7 @@ export class TaskExecutor {
       }
     })) : undefined;
 
-    const maxToolRounds = 8;
+    const maxToolRounds = 20;
     let finalText = '';
 
     for (let round = 0; round < maxToolRounds; round++) {
@@ -298,7 +298,7 @@ export class TaskExecutor {
     })) : undefined;
 
     console.log(`[Executor] 发送给 API 的工具参数:`, JSON.stringify(toolsParam, null, 2));
-    const maxToolRounds = 8;
+    const maxToolRounds = 20;
     for (let round = 0; round < maxToolRounds; round++) {
       const response = await fetch(`${endpoint}/chat/completions`, {
         method: 'POST',
@@ -527,7 +527,7 @@ export class TaskExecutor {
       input_schema: zodToJsonSchema(t.inputSchema, { $refStrategy: 'none' })
     })) : undefined;
 
-    const maxToolRounds = 8;
+    const maxToolRounds = 20;
     let finalText = '';
 
     for (let round = 0; round < maxToolRounds; round++) {

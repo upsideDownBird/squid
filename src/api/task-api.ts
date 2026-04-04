@@ -821,6 +821,31 @@ user-invocable: true
     }
   }
 
+  async deleteThread(threadId: string): Promise<{ success: boolean; threadId?: string; error?: string }> {
+    const id = String(threadId || '').trim();
+    if (!id) {
+      return { success: false, error: 'threadId is required' };
+    }
+
+    try {
+      const deleted = await this.conversationManager.deleteConversation(id);
+      if (!deleted) {
+        return { success: false, error: `删除线程失败: ${id}` };
+      }
+
+      if (this.currentConversationId === id) {
+        this.currentConversationId = null;
+      }
+
+      return { success: true, threadId: id };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || String(error),
+      };
+    }
+  }
+
   async generateExpertFromDescription(description: string): Promise<{ success: boolean; expert?: any; error?: string }> {
     try {
       // TODO: 调用 LLM 生成专家定义

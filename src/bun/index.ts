@@ -1,5 +1,5 @@
 // Electrobun backend entry point
-import { BrowserWindow } from 'electrobun/bun';
+import { BrowserWindow, ApplicationMenu } from 'electrobun/bun';
 import { ClawServer } from '../claw/server';
 import { CronScheduler } from '../scheduler/cron-scheduler';
 import { MCPConnectionManager } from '../mcp/connection-manager';
@@ -22,7 +22,7 @@ async function main() {
       // CORS headers
       const headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'application/json'
       };
@@ -440,6 +440,20 @@ async function main() {
         }
       }
 
+      // Delete a thread
+      if (url.pathname === '/api/threads/delete' && req.method === 'POST') {
+        try {
+          const body = await req.json();
+          const result = await taskAPI.deleteThread(body.threadId);
+          return new Response(JSON.stringify(result), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: error.message
+          }), { status: 500, headers });
+        }
+      }
+
       // Get conversation history
       if (url.pathname === '/api/conversation/history' && req.method === 'GET') {
         try {
@@ -637,6 +651,45 @@ async function main() {
     width: 1200,
     height: 800
   } as any);
+
+  // 设置标准应用菜单，启用系统级编辑快捷键（复制/粘贴/撤销等）。
+  ApplicationMenu.setApplicationMenu([
+    {
+      label: 'Jobopx Desktop',
+      submenu: [
+        { role: 'about' },
+        { type: 'divider' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'showAll' },
+        { type: 'divider' },
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'divider' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'pasteAndMatchStyle' },
+        { role: 'delete' },
+        { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        { type: 'divider' },
+        { role: 'close' }
+      ]
+    }
+  ] as any);
 
   // Initialize MCP connection manager
   const mcpManager = new MCPConnectionManager();
