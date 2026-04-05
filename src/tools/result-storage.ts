@@ -7,7 +7,7 @@ export class ResultStorage {
   private storageDir: string;
 
   constructor() {
-    this.storageDir = join(homedir(), '.jobopx', 'results');
+    this.storageDir = join(homedir(), '.squid', 'results');
   }
 
   async init() {

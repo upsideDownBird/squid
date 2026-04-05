@@ -35,7 +35,7 @@
   - 在设置中添加记忆相关配置选项
 
 - **存储**:
-  - 记忆文件存储在 `~/.jobopx/memory/` 目录
+  - 记忆文件存储在 `~/.squid/memory/` 目录
   - 使用 Markdown 格式，包含 frontmatter 元数据
 
 - **性能**:

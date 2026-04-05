@@ -8,7 +8,7 @@ import type {
 } from './tencent-skillhub-types';
 
 function getMetadataDir(): string {
-  return process.env.JOBOPX_TENCENT_SKILLHUB_METADATA_DIR || join(homedir(), '.jobopx', 'skillhub', 'tencent');
+  return process.env.JOBOPX_TENCENT_SKILLHUB_METADATA_DIR || join(homedir(), '.squid', 'skillhub', 'tencent');
 }
 
 function getLockfilePath(): string {

@@ -6,7 +6,7 @@ export class WorkspaceManager {
   private workspacesDir: string;
 
   constructor() {
-    this.workspacesDir = join(homedir(), '.jobopx', 'workspaces');
+    this.workspacesDir = join(homedir(), '.squid', 'workspaces');
   }
 
   async init() {

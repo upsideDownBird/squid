@@ -125,8 +125,8 @@ export class TaskAPI {
 
     const hubConfig = await this.getTencentSkillHubConfig();
     for (const [slug, item] of entries) {
-      const nestedPath = join(homedir(), '.jobopx', 'skills', slug, 'SKILL.md');
-      const flatPath = join(homedir(), '.jobopx', 'skills', `${slug}.md`);
+      const nestedPath = join(homedir(), '.squid', 'skills', slug, 'SKILL.md');
+      const flatPath = join(homedir(), '.squid', 'skills', `${slug}.md`);
       const exists = await Promise.all([
         access(nestedPath).then(() => true).catch(() => false),
         access(flatPath).then(() => true).catch(() => false),
@@ -198,7 +198,7 @@ user-invocable: true
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const skillsDir = join(homedir(), '.jobopx', 'skills');
+      const skillsDir = join(homedir(), '.squid', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       // 从 YAML 中提取技能名称
@@ -291,7 +291,7 @@ user-invocable: true
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const skillsDir = join(homedir(), '.jobopx', 'skills');
+      const skillsDir = join(homedir(), '.squid', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       const filePath = join(skillsDir, `${data.name}.md`);
@@ -398,7 +398,7 @@ user-invocable: true
       const lockfile = await readTencentSkillHubLockfile();
       const skills = await Promise.all(
         Object.entries(lockfile.skills || {}).map(async ([slug, item]) => {
-          const skillPath = join(homedir(), '.jobopx', 'skills', slug, 'SKILL.md');
+          const skillPath = join(homedir(), '.squid', 'skills', slug, 'SKILL.md');
           let name = slug;
           let description = '';
           try {
@@ -448,7 +448,7 @@ user-invocable: true
       const { readFile } = await import('fs/promises');
       const { join } = await import('path');
       const { homedir } = await import('os');
-      const skillPath = join(homedir(), '.jobopx', 'skills', normalized, 'SKILL.md');
+      const skillPath = join(homedir(), '.squid', 'skills', normalized, 'SKILL.md');
       const content = await readFile(skillPath, 'utf-8');
       const lockfile = await readTencentSkillHubLockfile();
       const meta = lockfile.skills?.[normalized];
@@ -487,8 +487,8 @@ user-invocable: true
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const skillDir = join(homedir(), '.jobopx', 'skills', normalized);
-      const flatSkillFile = join(homedir(), '.jobopx', 'skills', `${normalized}.md`);
+      const skillDir = join(homedir(), '.squid', 'skills', normalized);
+      const flatSkillFile = join(homedir(), '.squid', 'skills', `${normalized}.md`);
       await rm(skillDir, { recursive: true, force: true });
       await rm(flatSkillFile, { force: true });
 
@@ -499,7 +499,7 @@ user-invocable: true
         await writeTencentSkillHubLockfile(lockfile);
       }
 
-      const originPath = join(homedir(), '.jobopx', 'skillhub', 'tencent', 'origins', `${normalized}.json`);
+      const originPath = join(homedir(), '.squid', 'skillhub', 'tencent', 'origins', `${normalized}.json`);
       await rm(originPath, { force: true });
 
       return { success: true, slug: normalized };
@@ -875,7 +875,7 @@ user-invocable: true
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const configPath = join(homedir(), '.jobopx', 'config.json');
+      const configPath = join(homedir(), '.squid', 'config.json');
       const content = await readFile(configPath, 'utf-8');
       const config = JSON.parse(content);
       return config.model || {};
@@ -890,7 +890,7 @@ user-invocable: true
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       await mkdir(configDir, { recursive: true });
 
       const configPath = join(configDir, 'config.json');
@@ -1019,12 +1019,12 @@ user-invocable: true
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const configPath = join(homedir(), '.jobopx', 'config.json');
+      const configPath = join(homedir(), '.squid', 'config.json');
       const content = await readFile(configPath, 'utf-8');
       const config = JSON.parse(content);
-      return { workspace: config.workspace || '/tmp/jobopx-test' };
+      return { workspace: config.workspace || '/tmp/squid-test' };
     } catch (error: any) {
-      return { workspace: '/tmp/jobopx-test' };
+      return { workspace: '/tmp/squid-test' };
     }
   }
 
@@ -1034,7 +1034,7 @@ user-invocable: true
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       await mkdir(configDir, { recursive: true });
 
       const configPath = join(configDir, 'config.json');

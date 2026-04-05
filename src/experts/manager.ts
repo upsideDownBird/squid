@@ -47,7 +47,7 @@ export class ExpertManager {
     const { join } = await import('path');
     const { homedir } = await import('os');
 
-    const expertsDir = join(homedir(), '.jobopx', 'experts');
+    const expertsDir = join(homedir(), '.squid', 'experts');
     await mkdir(expertsDir, { recursive: true });
 
     const customExperts = this.list().filter(e => !builtInExperts.find(b => b.id === e.id));
@@ -61,7 +61,7 @@ export class ExpertManager {
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const filePath = join(homedir(), '.jobopx', 'experts', 'custom.json');
+      const filePath = join(homedir(), '.squid', 'experts', 'custom.json');
       const content = await readFile(filePath, 'utf-8');
       const customExperts: Expert[] = JSON.parse(content);
 

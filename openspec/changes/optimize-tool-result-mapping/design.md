@@ -26,7 +26,7 @@ claude-code-main 已经实现了成熟的工具结果管理系统：
 ## Decisions
 
 ### 1. 持久化存储位置
-**决策**: 使用 `~/.jobopx/sessions/<sessionId>/tool-results/` 存储工具结果
+**决策**: 使用 `~/.squid/sessions/<sessionId>/tool-results/` 存储工具结果
 
 **理由**:
 - 按会话隔离，便于清理

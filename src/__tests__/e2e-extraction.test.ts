@@ -13,7 +13,7 @@ describe('E2E: Memory Extraction Flow', () => {
   beforeAll(async () => {
     // Clean up before test
     try {
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       await rm(configDir, { recursive: true, force: true });
     } catch (error) {
       // Ignore
@@ -32,7 +32,7 @@ describe('E2E: Memory Extraction Flow', () => {
   afterAll(async () => {
     // Clean up after test
     try {
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       await rm(configDir, { recursive: true, force: true });
     } catch (error) {
       // Ignore

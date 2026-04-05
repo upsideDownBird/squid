@@ -15,7 +15,7 @@ export class SkillLoader {
   private skillsDir: string;
 
   constructor(skillsDir?: string) {
-    this.skillsDir = skillsDir || join(homedir(), '.jobopx', 'skills');
+    this.skillsDir = skillsDir || join(homedir(), '.squid', 'skills');
   }
 
   async loadSkill(filename: string): Promise<SkillDefinition> {

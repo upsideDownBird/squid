@@ -16,7 +16,7 @@ export class MCPConnectionManager {
 
   constructor() {
     this.client = new MCPClient();
-    this.configPath = join(homedir(), '.jobopx', 'mcp-servers.json');
+    this.configPath = join(homedir(), '.squid', 'mcp-servers.json');
   }
 
   async loadConfigs(): Promise<MCPServerConfig[]> {
@@ -29,7 +29,7 @@ export class MCPConnectionManager {
   }
 
   async saveConfigs(configs: MCPServerConfig[]): Promise<void> {
-    await mkdir(join(homedir(), '.jobopx'), { recursive: true });
+    await mkdir(join(homedir(), '.squid'), { recursive: true });
     await writeFile(this.configPath, JSON.stringify(configs, null, 2));
   }
 

@@ -16,7 +16,7 @@
 - [x] 2.2 实现 `saveMarker()` 保存最后分析的消息索引
 - [x] 2.3 实现 `getMarker()` 加载标记位置
 - [x] 2.4 实现 `resetMarker()` 重置标记
-- [x] 2.5 标记存储在 `~/.jobopx/extraction-marker.json`
+- [x] 2.5 标记存储在 `~/.squid/extraction-marker.json`
 
 ## 3. 后端：提取触发器
 
@@ -35,7 +35,7 @@
 - [ ] 4.3 实现 `shouldCleanup()` 判断是否需要清理（>= 180 个）
 - [ ] 4.4 实现 `cleanupLowValueMemories()` 清理低分记忆
 - [ ] 4.5 实现保护机制（30 天内的记忆不清理）
-- [ ] 4.6 实现清理日志记录到 `~/.jobopx/memory-cleanup.log`
+- [ ] 4.6 实现清理日志记录到 `~/.squid/memory-cleanup.log`
 - [ ] 4.7 在 MemoryManager 中集成自动清理检查
 
 ## 5. 后端：记忆访问跟踪

@@ -52,5 +52,5 @@ The system SHALL log all automatic cleanup actions for user reference.
 - **THEN** system logs memory IDs, names, and scores to cleanup log file
 
 #### Scenario: User can view cleanup history
-- **WHEN** user checks cleanup log at ~/.jobopx/memory-cleanup.log
+- **WHEN** user checks cleanup log at ~/.squid/memory-cleanup.log
 - **THEN** user sees history of all automatic cleanups with timestamps

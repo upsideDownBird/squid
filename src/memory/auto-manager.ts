@@ -25,13 +25,13 @@ export class AutoMemoryManager {
 
   constructor(memoryManager: MemoryManager) {
     this.memoryManager = memoryManager;
-    const configDir = join(homedir(), '.jobopx');
+    const configDir = join(homedir(), '.squid');
     this.logPath = join(configDir, 'memory-cleanup.log');
   }
 
   async init(): Promise<void> {
     try {
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       await mkdir(configDir, { recursive: true });
     } catch (error) {
       // Directory already exists

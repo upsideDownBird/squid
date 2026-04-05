@@ -29,7 +29,7 @@ export type PersistToolResultError = {
  * 获取会话目录
  */
 function getSessionDir(sessionId: string): string {
-  return join(homedir(), '.jobopx', 'sessions', sessionId);
+  return join(homedir(), '.squid', 'sessions', sessionId);
 }
 
 /**

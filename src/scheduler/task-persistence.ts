@@ -8,7 +8,7 @@ export class TaskPersistence {
   private tasksPath: string;
 
   constructor() {
-    this.tasksPath = join(homedir(), '.jobopx', 'scheduled-tasks.json');
+    this.tasksPath = join(homedir(), '.squid', 'scheduled-tasks.json');
   }
 
   async load(): Promise<ScheduledTask[]> {
@@ -21,7 +21,7 @@ export class TaskPersistence {
   }
 
   async save(tasks: ScheduledTask[]): Promise<void> {
-    await mkdir(join(homedir(), '.jobopx'), { recursive: true });
+    await mkdir(join(homedir(), '.squid'), { recursive: true });
     await writeFile(this.tasksPath, JSON.stringify(tasks, null, 2));
   }
 

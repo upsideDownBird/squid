@@ -56,7 +56,7 @@ export class TaskExecutor {
       const { join } = await import('path');
       const { homedir } = await import('os');
 
-      const configPath = join(homedir(), '.jobopx', 'config.json');
+      const configPath = join(homedir(), '.squid', 'config.json');
       const content = await readFile(configPath, 'utf-8');
       const config = JSON.parse(content);
       return config.model || null;

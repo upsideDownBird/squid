@@ -16,14 +16,14 @@ export class ConfigManager {
   private config: ExtractionConfig;
 
   constructor() {
-    const configDir = join(homedir(), '.jobopx');
+    const configDir = join(homedir(), '.squid');
     this.configPath = join(configDir, 'extraction-config.json');
     this.config = { ...DEFAULT_CONFIG };
   }
 
   async init(): Promise<void> {
     try {
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       await mkdir(configDir, { recursive: true });
       await this.load();
     } catch (error) {

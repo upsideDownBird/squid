@@ -68,5 +68,5 @@
 
 ## Open Questions
 
-- 腾讯 SkillHub 是否需要认证 token（如果需要，配置放 `~/.jobopx/config.json` 还是独立配置）？
+- 腾讯 SkillHub 是否需要认证 token（如果需要，配置放 `~/.squid/config.json` 还是独立配置）？
 - 技能唯一键采用 `slug` 还是 `slug@version` 作为本地目录命名策略？

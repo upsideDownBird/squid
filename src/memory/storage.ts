@@ -14,7 +14,7 @@ export class MemoryStorage {
   private memoryDir: string;
 
   constructor() {
-    this.memoryDir = join(homedir(), '.jobopx', 'memory');
+    this.memoryDir = join(homedir(), '.squid', 'memory');
   }
 
   async init(): Promise<void> {

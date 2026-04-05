@@ -65,7 +65,7 @@ export async function installTencentSkillHubSkill(params: {
     );
     validateTencentSkillHubPackage(pkg);
 
-    const skillsDir = params.config.skillsDir || join(homedir(), '.jobopx', 'skills');
+    const skillsDir = params.config.skillsDir || join(homedir(), '.squid', 'skills');
     const targetDir = join(skillsDir, slug);
     if (existsSync(targetDir) && !params.force) {
       return {

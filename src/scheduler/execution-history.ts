@@ -8,7 +8,7 @@ export class ExecutionHistory {
   private records: TaskExecutionRecord[] = [];
 
   constructor() {
-    this.historyPath = join(homedir(), '.jobopx', 'scheduler-history.json');
+    this.historyPath = join(homedir(), '.squid', 'scheduler-history.json');
   }
 
   async load(): Promise<void> {
@@ -21,7 +21,7 @@ export class ExecutionHistory {
   }
 
   async save(): Promise<void> {
-    await mkdir(join(homedir(), '.jobopx'), { recursive: true });
+    await mkdir(join(homedir(), '.squid'), { recursive: true });
     await writeFile(this.historyPath, JSON.stringify(this.records, null, 2));
   }
 

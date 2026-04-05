@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Memory file storage
-The system SHALL store memory files in `~/.jobopx/memory/` directory organized by type (user, feedback, project, reference).
+The system SHALL store memory files in `~/.squid/memory/` directory organized by type (user, feedback, project, reference).
 
 #### Scenario: Memory file creation
 - **WHEN** a new memory is created
@@ -24,19 +24,19 @@ The system SHALL support four memory types: user, feedback, project, and referen
 
 #### Scenario: User memory type
 - **WHEN** creating a user-type memory
-- **THEN** system stores it in `~/.jobopx/memory/user/` directory
+- **THEN** system stores it in `~/.squid/memory/user/` directory
 
 #### Scenario: Feedback memory type
 - **WHEN** creating a feedback-type memory
-- **THEN** system stores it in `~/.jobopx/memory/feedback/` directory
+- **THEN** system stores it in `~/.squid/memory/feedback/` directory
 
 #### Scenario: Project memory type
 - **WHEN** creating a project-type memory
-- **THEN** system stores it in `~/.jobopx/memory/project/` directory
+- **THEN** system stores it in `~/.squid/memory/project/` directory
 
 #### Scenario: Reference memory type
 - **WHEN** creating a reference-type memory
-- **THEN** system stores it in `~/.jobopx/memory/reference/` directory
+- **THEN** system stores it in `~/.squid/memory/reference/` directory
 
 ### Requirement: Memory file count limit
 The system SHALL limit memory file scanning to the most recent 200 files.

@@ -11,7 +11,7 @@ vi.mock('../tools/unified-executor', () => ({
 }));
 
 describe('SkillTool', () => {
-  const testSkillsDir = join(homedir(), '.jobopx', 'skills');
+  const testSkillsDir = join(homedir(), '.squid', 'skills');
   const mockContext: ToolContext = {
     workDir: process.cwd(),
     taskId: 'test-task',

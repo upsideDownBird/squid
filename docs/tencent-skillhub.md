@@ -51,7 +51,7 @@
   "success": true,
   "slug": "demo-skill",
   "version": "1.0.0",
-  "targetDir": "/Users/xxx/.jobopx/skills/demo-skill"
+  "targetDir": "/Users/xxx/.squid/skills/demo-skill"
 }
 ```
 
@@ -62,7 +62,7 @@
 1. 环境变量：
    - `TENCENT_SKILLHUB_BASE_URL`
    - `TENCENT_SKILLHUB_TOKEN`
-2. `~/.jobopx/config.json` 中的：
+2. `~/.squid/config.json` 中的：
    - `model.skillhub.tencent.baseUrl`
    - `model.skillhub.tencent.token`
    - 或 `model.tencentSkillHub.baseUrl/token`
@@ -72,8 +72,8 @@
 
 安装来源与锁文件会写入：
 
-- `~/.jobopx/skillhub/tencent/lock.json`
-- `~/.jobopx/skillhub/tencent/origins/<slug>.json`
+- `~/.squid/skillhub/tencent/lock.json`
+- `~/.squid/skillhub/tencent/origins/<slug>.json`
 
 ## 故障排查
 

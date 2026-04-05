@@ -35,7 +35,7 @@ describe('Memory Extraction System', () => {
   afterEach(async () => {
     // Clean up test data - delete memory files but keep directory structure
     try {
-      const memoryDir = join(homedir(), '.jobopx', 'memory');
+      const memoryDir = join(homedir(), '.squid', 'memory');
       const types = ['user', 'feedback', 'project', 'reference'];
 
       for (const type of types) {
@@ -55,7 +55,7 @@ describe('Memory Extraction System', () => {
       } catch {}
 
       // Clean up config files created by this test
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       try {
         await unlink(join(configDir, 'extraction-marker.json'));
       } catch {}

@@ -9,7 +9,7 @@ export class TaskManager {
   private tasks: Map<string, Task> = new Map();
 
   constructor() {
-    this.tasksDir = join(homedir(), '.jobopx', 'tasks');
+    this.tasksDir = join(homedir(), '.squid', 'tasks');
   }
 
   async init() {

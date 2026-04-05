@@ -29,7 +29,7 @@ export class MemorySelector {
   constructor(memoryManager: MemoryManager) {
     this.storage = new MemoryStorage();
     this.memoryManager = memoryManager;
-    this.memoryDir = join(homedir(), '.jobopx', 'memory');
+    this.memoryDir = join(homedir(), '.squid', 'memory');
     this.surfacedMemories = new Set();
   }
 

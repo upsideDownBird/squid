@@ -5,7 +5,7 @@
 
 #### Scenario: 结果超过阈值时持久化
 - **WHEN** 工具返回的结果大小超过 maxResultSizeChars（默认 50,000 字符）
-- **THEN** 系统将完整结果写入 `~/.jobopx/sessions/<sessionId>/tool-results/<toolUseId>.txt`
+- **THEN** 系统将完整结果写入 `~/.squid/sessions/<sessionId>/tool-results/<toolUseId>.txt`
 - **AND** 返回包含前 2,000 字节预览和文件路径的消息
 
 #### Scenario: 结果未超过阈值时直接返回
@@ -38,7 +38,7 @@
 
 #### Scenario: 按会话隔离存储
 - **WHEN** 不同会话的工具执行产生结果
-- **THEN** 每个会话的结果存储在独立的目录 `~/.jobopx/sessions/<sessionId>/tool-results/`
+- **THEN** 每个会话的结果存储在独立的目录 `~/.squid/sessions/<sessionId>/tool-results/`
 - **AND** 使用 toolUseId 作为文件名确保唯一性
 
 #### Scenario: 避免重复写入

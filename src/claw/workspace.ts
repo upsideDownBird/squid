@@ -6,7 +6,7 @@ export class ClawWorkspace {
   private readonly clawDir: string;
 
   constructor() {
-    this.clawDir = join(homedir(), '.jobopx', 'claw');
+    this.clawDir = join(homedir(), '.squid', 'claw');
   }
 
   async initialize(): Promise<void> {

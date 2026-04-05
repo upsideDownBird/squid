@@ -37,7 +37,7 @@ export class ConversationManager {
   private modelName?: string;
 
   constructor() {
-    this.configDir = join(homedir(), '.jobopx', 'conversations');
+    this.configDir = join(homedir(), '.squid', 'conversations');
     this.compressor = new ConversationCompressor(100000); // 100k token limit
 
     // Initialize memory extraction components

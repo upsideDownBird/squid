@@ -14,7 +14,7 @@ export class ExtractionStateManager {
   private states: Map<string, ExtractionState>;
 
   constructor() {
-    this.statePath = join(homedir(), '.jobopx', 'extraction-state.json');
+    this.statePath = join(homedir(), '.squid', 'extraction-state.json');
     this.states = new Map();
   }
 

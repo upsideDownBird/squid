@@ -9,13 +9,13 @@ export class ExtractionMarker {
   private markers: ExtractionCursor = {};
 
   constructor() {
-    const configDir = join(homedir(), '.jobopx');
+    const configDir = join(homedir(), '.squid');
     this.markerPath = join(configDir, 'extraction-marker.json');
   }
 
   async init(): Promise<void> {
     try {
-      const configDir = join(homedir(), '.jobopx');
+      const configDir = join(homedir(), '.squid');
       await mkdir(configDir, { recursive: true });
       await this.load();
     } catch (error) {

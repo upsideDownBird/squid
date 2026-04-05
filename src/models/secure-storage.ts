@@ -9,7 +9,7 @@ export class SecureStorage {
   private algorithm = 'aes-256-gcm';
 
   constructor() {
-    this.configDir = join(homedir(), '.jobopx');
+    this.configDir = join(homedir(), '.squid');
     this.configFile = join(this.configDir, 'config.enc');
   }
 

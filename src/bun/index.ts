@@ -8,7 +8,7 @@ import { initializeBuiltinChannels } from '../channels/index';
 import { cronManager } from '../tools/cron-manager';
 
 async function main() {
-  console.log('Jobopx Desktop - Backend starting...');
+  console.log('squid - Backend starting...');
 
   // Initialize Task API
   const taskAPI = new TaskAPI();
@@ -646,7 +646,7 @@ async function main() {
 
   // Create main window with file URL
   const mainWindow = new BrowserWindow({
-    title: 'Jobopx Desktop',
+    title: 'squid',
     url: `file://${htmlPath}`,
     width: 1200,
     height: 800
@@ -655,7 +655,7 @@ async function main() {
   // 设置标准应用菜单，启用系统级编辑快捷键（复制/粘贴/撤销等）。
   ApplicationMenu.setApplicationMenu([
     {
-      label: 'Jobopx Desktop',
+      label: 'squid',
       submenu: [
         { role: 'about' },
         { type: 'divider' },
