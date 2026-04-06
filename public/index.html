@@ -1452,6 +1452,16 @@
         <div class="page-content">
           <p id="channelsLoadError" style="display: none; color: #c00; margin-bottom: 12px;"></p>
           <div id="channelsExtensionErrors" style="display: none; margin-bottom: 12px; padding: 10px 12px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 6px; font-size: 13px; color: #9a3412;"></div>
+          <div id="channelsExtensionCatalogCard" class="card" style="display: none; margin-bottom: 16px;">
+            <h3>渠道扩展</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 8px;">
+              下列为扫描到的扩展。勾选「启用」的扩展才会被加载；保存后写入 ~/.squid/channel-extensions.json 并立即重新加载（无需重启）。
+            </p>
+            <p id="channelsExtensionCatalogModeHint" style="font-size: 12px; color: #888; margin-bottom: 12px;"></p>
+            <div id="channelsExtensionCatalogChecks"></div>
+            <button type="button" class="btn" id="channelsExtensionSaveBtn" style="margin-top: 12px;">保存启用并重新加载</button>
+            <p id="channelsExtensionCatalogSaveHint" style="margin-top: 10px; font-size: 13px; color: #666;"></p>
+          </div>
           <div id="channelsListView">
             <div id="channelsTableWrap"></div>
           </div>
@@ -2185,6 +2195,9 @@
       if (channelsBackBtn) channelsBackBtn.addEventListener('click', () => channelsShowList());
       const channelsRefreshBtn = document.getElementById('channelsRefreshBtn');
       if (channelsRefreshBtn) channelsRefreshBtn.addEventListener('click', () => loadChannelsList());
+      const channelsExtensionSaveBtn = document.getElementById('channelsExtensionSaveBtn');
+      if (channelsExtensionSaveBtn)
+        channelsExtensionSaveBtn.addEventListener('click', () => saveChannelsExtensionEnabled());
       const feishuCfgSaveBtn = document.getElementById('feishuCfgSaveBtn');
       if (feishuCfgSaveBtn) feishuCfgSaveBtn.addEventListener('click', () => saveFeishuChannelForm());
 
@@ -2674,12 +2687,92 @@
           extErrEl.style.display = 'block';
         }
         renderChannelsTable(channelsListCache);
+        renderExtensionCatalogFromData(data);
       } catch (e) {
         if (errEl) {
           errEl.textContent = '加载失败: ' + e.message;
           errEl.style.display = 'block';
         }
         if (wrap) wrap.innerHTML = '';
+        renderExtensionCatalogFromData({});
+      }
+    }
+
+    function renderExtensionCatalogFromData(data) {
+      const card = document.getElementById('channelsExtensionCatalogCard');
+      const checks = document.getElementById('channelsExtensionCatalogChecks');
+      const modeHint = document.getElementById('channelsExtensionCatalogModeHint');
+      const saveHint = document.getElementById('channelsExtensionCatalogSaveHint');
+      if (!card || !checks) return;
+      const catalog = Array.isArray(data.extensionCatalog) ? data.extensionCatalog : [];
+      const whitelist = !!data.extensionEnabledWhitelist;
+      if (!catalog.length) {
+        card.style.display = 'none';
+        checks.innerHTML = '';
+        if (saveHint) saveHint.textContent = '';
+        return;
+      }
+      card.style.display = 'block';
+      if (modeHint) {
+        modeHint.textContent = whitelist
+          ? '当前为启用白名单模式（项目或 ~/.squid/channel-extensions.json 中的 enabled）。仅列表中的扩展会加载。'
+          : '当前未配置 enabled 白名单：已发现的扩展会全部尝试加载。勾选并保存后，将写入用户配置并仅加载勾选项。';
+      }
+      let html =
+        '<div style="display:flex;flex-direction:column;gap:10px;">';
+      for (const row of catalog) {
+        const id = escapeHtmlChannels(row.id);
+        const checked = row.configEnabled ? ' checked' : '';
+        const loaded = row.loaded
+          ? ' <span style="color:#059669;font-size:12px;">已加载</span>'
+          : ' <span style="font-size:12px;color:#94a3b8;">未加载</span>';
+        const namePart = row.name ? ' — ' + escapeHtmlChannels(row.name) : '';
+        const verPart = row.version
+          ? ' <code style="font-size:11px;">' + escapeHtmlChannels(row.version) + '</code>'
+          : '';
+        html +=
+          '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-wrap:wrap;"><input type="checkbox" class="channels-ext-enable-cb" value="' +
+          id +
+          '"' +
+          checked +
+          '><span><strong>' +
+          id +
+          '</strong>' +
+          namePart +
+          verPart +
+          '</span>' +
+          loaded +
+          '</label>';
+      }
+      html += '</div>';
+      checks.innerHTML = html;
+      if (saveHint) saveHint.textContent = '';
+    }
+
+    async function saveChannelsExtensionEnabled() {
+      const saveHint = document.getElementById('channelsExtensionCatalogSaveHint');
+      const btn = document.getElementById('channelsExtensionSaveBtn');
+      const checkedBoxes = document.querySelectorAll('.channels-ext-enable-cb:checked');
+      const enabled = Array.from(checkedBoxes).map((el) => el.value);
+      if (saveHint) saveHint.textContent = '保存中…';
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('http://localhost:50001/api/channels/extensions/enabled', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled }),
+        });
+        const respData = await res.json();
+        if (!respData.success) {
+          if (saveHint) saveHint.textContent = '失败: ' + (respData.error || res.statusText);
+          return;
+        }
+        if (saveHint) saveHint.textContent = '已保存并重新加载扩展。';
+        await loadChannelsList();
+      } catch (e) {
+        if (saveHint) saveHint.textContent = '失败: ' + e.message;
+      } finally {
+        if (btn) btn.disabled = false;
       }
     }
 
@@ -2859,10 +2952,11 @@
               '保存失败: ' + (data.errors ? data.errors.join('; ') : data.error || res.statusText);
           return;
         }
-        if (hint) hint.textContent = '已保存。若修改了凭证或出站配置，请重启应用以加载 Feishu Channel。';
+        if (hint) hint.textContent = '已保存；扩展已自动重新加载，返回渠道列表可查看最新状态。';
         if (secEl) secEl.value = '';
         if (ekEl) ekEl.value = '';
         await loadFeishuFormFromApi();
+        loadChannelsList();
       } catch (e) {
         if (hint) hint.textContent = '保存失败: ' + e.message;
       }

@@ -1,9 +1,6 @@
 import { ChannelRegistry } from './registry';
 import { WebUIChannelPlugin } from './plugins/webui/plugin';
-import {
-  getExtensionChannelPluginIds,
-  loadChannelExtensions,
-} from './extensions/loader';
+import { getExtensionChannelPluginIds, loadChannelExtensions } from './extensions/loader';
 
 /**
  * 全局 Channel Registry 实例
@@ -60,5 +57,15 @@ export async function cleanupChannels(): Promise<void> {
 }
 
 export { getChannelsOverview } from './channel-overview';
-export { getChannelExtensionLoadErrors, getExtensionChannelPluginIds } from './extensions/loader';
+export {
+  loadChannelExtensionsConfigMerged,
+  saveUserChannelExtensionsEnabled,
+} from './extensions/config';
+export {
+  discoverChannelExtensions,
+  getChannelExtensionLoadErrors,
+  getExtensionChannelPluginIds,
+  reloadChannelExtensions,
+  unloadChannelExtensions,
+} from './extensions/loader';
 export { FeishuChannelPlugin, handleFeishuWebhookRequest, registerFeishuSquidBridge } from './feishu';

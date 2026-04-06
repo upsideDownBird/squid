@@ -73,7 +73,7 @@ function syntheticFeishuOverview(): ChannelOverviewDTO {
       name: 'Feishu / Lark',
       description: '飞书机器人（默认 WebSocket 长连接入站 + tenant 发消息）',
       healthy: false,
-      statusMessage: '未配置：请填写 App ID 等信息后保存（保存后需重启以注册插件）',
+      statusMessage: '未配置：请填写 App ID 等信息后保存；若已启用飞书扩展，保存后会自动重新加载扩展。',
       category: 'builtin',
       configurable: true,
       registered: false,
@@ -102,7 +102,7 @@ function syntheticFeishuOverview(): ChannelOverviewDTO {
       description: '飞书机器人（默认 WebSocket 长连接入站 + tenant 发消息）',
       healthy: false,
       statusMessage:
-        '入站凭证已有；未填默认接收方时，主动消息会回退为「最近入站会话」的 chat_id（冷启动无入站前可能无法推送）。扩展未加载时请检查 channel-extensions 与重启。',
+        '入站凭证已有；未填默认接收方时，主动消息会回退为「最近入站会话」的 chat_id。若扩展未加载，请在渠道页检查「扩展启用」或 channel-extensions.json。',
       category: 'builtin',
       configurable: true,
       registered: false,
@@ -114,7 +114,8 @@ function syntheticFeishuOverview(): ChannelOverviewDTO {
     name: 'Feishu / Lark',
     description: '飞书机器人（默认 WebSocket 长连接入站 + tenant 发消息）',
     healthy: false,
-    statusMessage: '配置已完整但未在当前进程注册，请重启 squid 以加载 Feishu Channel',
+    statusMessage:
+      '配置已完整但未在当前进程注册：请在渠道页勾选启用飞书扩展并保存，或保存飞书凭证以触发自动重新加载。',
     category: 'builtin',
     configurable: true,
     registered: false,

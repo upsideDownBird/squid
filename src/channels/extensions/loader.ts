@@ -9,7 +9,10 @@ import {
   mergeEffectiveExtensionRoots,
 } from './config';
 import { validateChannelExtensionManifest } from './manifest';
-import type { ChannelExtensionLoadError } from './types';
+import type {
+  ChannelExtensionLoadError,
+  DiscoveredChannelExtension,
+} from './types';
 
 let extensionPluginIds = new Set<string>();
 let lastLoadErrors: ChannelExtensionLoadError[] = [];
@@ -44,22 +47,132 @@ export function isPathInsideOrEqualChild(realChild: string, realAncestor: string
   return c.startsWith(a + sep);
 }
 
-function enabledPredicate(enabled: string[] | null | undefined): (id: string) => boolean {
-  if (enabled === undefined || enabled === null) return () => true;
-  if (enabled.length === 0) return () => false;
-  const allow = new Set(enabled);
+const EXTENSION_CLEANUP_TIMEOUT_MS = 5000;
+
+/** 与内置渠道 id 冲突的扩展 manifest 跳过 */
+const RESERVED_EXTENSION_IDS = new Set(['webui']);
+
+function allowExtensionId(enabledExplicit: boolean, enabled: string[] | undefined): (id: string) => boolean {
+  if (!enabledExplicit) return () => true;
+  const allow = new Set(enabled ?? []);
   return (id) => allow.has(id);
+}
+
+/**
+ * 卸载所有已加载的 channel 扩展（cleanup + 从 registry 移除），不影响内置渠道。
+ */
+export async function unloadChannelExtensions(registry: ChannelRegistry): Promise<void> {
+  const ids = [...extensionPluginIds];
+  for (const id of ids) {
+    const plugin = registry.get(id);
+    if (plugin?.setup?.cleanup) {
+      try {
+        await Promise.race([
+          plugin.setup.cleanup(),
+          new Promise<void>((_, rej) =>
+            setTimeout(() => rej(new Error('cleanup 超时')), EXTENSION_CLEANUP_TIMEOUT_MS)
+          ),
+        ]);
+      } catch (e: unknown) {
+        console.error(`[ChannelExtensions] cleanup ${id}:`, e instanceof Error ? e.message : e);
+      }
+    }
+    registry.unregister(id);
+  }
+  extensionPluginIds.clear();
+  lastLoadErrors = [];
+}
+
+/**
+ * 按当前配置重新扫描并加载扩展（内部先卸载已加载扩展；飞书凭证或 enabled 保存后可调用）。
+ */
+export async function reloadChannelExtensions(registry: ChannelRegistry): Promise<void> {
+  await loadChannelExtensions(registry);
+}
+
+/**
+ * 扫描 roots 下所有合法 manifest（不 import），用于渠道页展示「已发现 / 启用 / 已加载」。
+ */
+export function discoverChannelExtensions(): DiscoveredChannelExtension[] {
+  const cfg = loadChannelExtensionsConfigMerged();
+  const roots = mergeEffectiveExtensionRoots({ roots: cfg.roots });
+  const out: DiscoveredChannelExtension[] = [];
+  const seen = new Set<string>();
+
+  if (!roots.length) return out;
+
+  for (const rootRaw of roots) {
+    let realRoot: string;
+    try {
+      realRoot = realpathSync(rootRaw);
+    } catch {
+      continue;
+    }
+    if (!isDir(realRoot)) continue;
+
+    let entries: string[];
+    try {
+      entries = readdirSync(realRoot);
+    } catch {
+      continue;
+    }
+
+    for (const name of entries) {
+      const pluginRoot = join(realRoot, name);
+      if (!isDir(pluginRoot)) continue;
+
+      let realPluginRoot: string;
+      try {
+        realPluginRoot = realpathSync(pluginRoot);
+      } catch {
+        continue;
+      }
+      if (!isPathInsideOrEqualChild(realPluginRoot, realRoot)) continue;
+
+      const manifestPath = join(realPluginRoot, 'channel-plugin.json');
+      if (!existsSync(manifestPath)) continue;
+
+      let manifestText: string;
+      try {
+        manifestText = readFileSync(manifestPath, 'utf8');
+      } catch {
+        continue;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(manifestText);
+      } catch {
+        continue;
+      }
+
+      const validated = validateChannelExtensionManifest(parsed);
+      if (!validated.ok) continue;
+      const manifest = validated.data;
+
+      if (RESERVED_EXTENSION_IDS.has(manifest.id)) continue;
+      if (seen.has(manifest.id)) continue;
+      seen.add(manifest.id);
+
+      out.push({
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+      });
+    }
+  }
+
+  return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**
  * 在内置 Channel 注册完成之后调用：从配置的 roots 扫描子目录并动态 import。
  */
 export async function loadChannelExtensions(registry: ChannelRegistry): Promise<void> {
-  lastLoadErrors = [];
-  extensionPluginIds.clear();
+  await unloadChannelExtensions(registry);
 
   const cfg = loadChannelExtensionsConfigMerged();
-  const roots = mergeEffectiveExtensionRoots(cfg);
+  const roots = mergeEffectiveExtensionRoots({ roots: cfg.roots });
   if (!roots.length) {
     console.log(
       '[ChannelExtensions] 无可扫描路径：channel-extensions 中 roots 为空且 ~/.squid/extensions 不存在，跳过扩展加载'
@@ -69,7 +182,7 @@ export async function loadChannelExtensions(registry: ChannelRegistry): Promise<
 
   const reserved = new Set(registry.list().map((p) => p.id));
   const loadedExtensionIds = new Set<string>();
-  const allowId = enabledPredicate(cfg.enabled);
+  const allowId = allowExtensionId(cfg.enabledExplicit, cfg.enabled);
 
   for (const rootRaw of roots) {
     let realRoot: string;
@@ -132,6 +245,15 @@ export async function loadChannelExtensions(registry: ChannelRegistry): Promise<
         continue;
       }
       const manifest = validated.data;
+
+      if (RESERVED_EXTENSION_IDS.has(manifest.id)) {
+        pushError({
+          pluginId: manifest.id,
+          path: manifestPath,
+          message: '扩展 id 为保留 id，已跳过',
+        });
+        continue;
+      }
 
       if (!allowId(manifest.id)) continue;
 

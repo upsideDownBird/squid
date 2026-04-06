@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ChannelExtensionsFileConfig } from './types';
+import type { ChannelExtensionsFileConfig, MergedChannelExtensionsRuntime } from './types';
 
 /**
  * 显式指定项目根（打包后 bundle 不在源码树内时，或安装路径无向上可解析的 config 时使用）。
@@ -63,9 +63,10 @@ function readIfExists(path: string): ChannelExtensionsFileConfig | null {
 }
 
 /**
- * 合并项目内与用户目录配置：roots 合并去重；enabled 仅一方可写 — 用户文件含 `enabled` 键时优先生效，否则用项目文件，否则视为不限制（全部候选可加载）。
+ * 合并项目内与用户目录配置：roots 合并去重；
+ * enabled：用户文件含 `enabled` 键时优先生效，否则用项目文件；两侧都未写 `enabled` 键则 enabledExplicit=false（不启用白名单，扫描到的均可加载）。
  */
-export function loadChannelExtensionsConfigMerged(): ChannelExtensionsFileConfig {
+export function loadChannelExtensionsConfigMerged(): MergedChannelExtensionsRuntime {
   const projectPath = join(getJobopxDesktopRoot(), 'config', 'channel-extensions.json');
   const userPath = join(homedir(), '.squid', 'channel-extensions.json');
 
@@ -74,14 +75,49 @@ export function loadChannelExtensionsConfigMerged(): ChannelExtensionsFileConfig
 
   const roots = [...new Set([...(project?.roots ?? []), ...(user?.roots ?? [])])];
 
-  let enabled: string[] | null | undefined;
+  let enabled: string[] | undefined;
+  let enabledExplicit = false;
   if (user && Object.prototype.hasOwnProperty.call(user, 'enabled')) {
-    enabled = user.enabled ?? undefined;
+    enabledExplicit = true;
+    const v = user.enabled;
+    enabled = Array.isArray(v) ? [...v] : [];
   } else if (project && Object.prototype.hasOwnProperty.call(project, 'enabled')) {
-    enabled = project.enabled ?? undefined;
+    enabledExplicit = true;
+    const v = project.enabled;
+    enabled = Array.isArray(v) ? [...v] : [];
   }
 
-  return { roots, enabled };
+  return { roots, enabled, enabledExplicit };
+}
+
+/**
+ * 写入 ~/.squid/channel-extensions.json 的 `enabled` 数组（会合并保留文件中其它键）。
+ * 写入后用户侧视为显式白名单。
+ */
+export function saveUserChannelExtensionsEnabled(enabledIds: string[]): { ok: boolean; error?: string } {
+  try {
+    const dir = join(homedir(), '.squid');
+    mkdirSync(dir, { recursive: true });
+    const userPath = join(dir, 'channel-extensions.json');
+    let existing: Record<string, unknown> = {};
+    if (existsSync(userPath)) {
+      try {
+        const text = readFileSync(userPath, 'utf8');
+        const parsed = JSON.parse(text) as unknown;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          existing = parsed as Record<string, unknown>;
+        }
+      } catch {
+        return { ok: false, error: '~/.squid/channel-extensions.json 非合法 JSON' };
+      }
+    }
+    existing.enabled = [...enabledIds];
+    writeFileSync(userPath, JSON.stringify(existing, null, 2), 'utf8');
+    return { ok: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: msg };
+  }
 }
 
 /** 将 roots 中的相对路径解析为相对于 jobopx 根目录的绝对路径 */

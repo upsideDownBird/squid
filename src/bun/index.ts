@@ -6,12 +6,16 @@ import { MCPConnectionManager } from '../mcp/connection-manager';
 import { TaskAPI } from '../api/task-api';
 import {
   channelRegistry,
+  discoverChannelExtensions,
   getChannelExtensionLoadErrors,
   getChannelsOverview,
   getExtensionChannelPluginIds,
   handleFeishuWebhookRequest,
   initializeBuiltinChannels,
+  loadChannelExtensionsConfigMerged,
   registerFeishuSquidBridge,
+  reloadChannelExtensions,
+  saveUserChannelExtensionsEnabled,
 } from '../channels/index';
 import {
   loadFeishuChannelConfig,
@@ -653,9 +657,53 @@ async function main() {
           const extIds = getExtensionChannelPluginIds();
           const channels = await getChannelsOverview(channelRegistry, extIds);
           const errors = getChannelExtensionLoadErrors();
-          return new Response(JSON.stringify({ channels, errors }), { headers });
+          const merged = loadChannelExtensionsConfigMerged();
+          const discovered = discoverChannelExtensions();
+          const allow = new Set(merged.enabled ? merged.enabled : []);
+          const extensionCatalog = discovered.map((d) => ({
+            id: d.id,
+            name: d.name,
+            version: d.version,
+            configEnabled: merged.enabledExplicit ? allow.has(d.id) : true,
+            loaded: extIds.has(d.id),
+          }));
+          return new Response(
+            JSON.stringify({
+              channels,
+              errors,
+              extensionCatalog,
+              extensionEnabledWhitelist: merged.enabledExplicit,
+            }),
+            { headers }
+          );
         } catch (error: any) {
           return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers,
+          });
+        }
+      }
+
+      if (url.pathname === '/api/channels/extensions/enabled' && req.method === 'POST') {
+        try {
+          const body = (await req.json()) as { enabled?: unknown };
+          if (!Array.isArray(body.enabled) || !body.enabled.every((x) => typeof x === 'string')) {
+            return new Response(JSON.stringify({ success: false, error: 'enabled 须为字符串数组' }), {
+              status: 400,
+              headers,
+            });
+          }
+          const save = saveUserChannelExtensionsEnabled(body.enabled as string[]);
+          if (!save.ok) {
+            return new Response(JSON.stringify({ success: false, error: save.error }), {
+              status: 500,
+              headers,
+            });
+          }
+          await reloadChannelExtensions(channelRegistry);
+          return new Response(JSON.stringify({ success: true }), { headers });
+        } catch (error: any) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), {
             status: 500,
             headers,
           });
@@ -698,6 +746,11 @@ async function main() {
             });
           }
           const c = await loadFeishuChannelConfig();
+          try {
+            await reloadChannelExtensions(channelRegistry);
+          } catch (reloadErr: unknown) {
+            console.error('[Channels] 飞书配置保存后重载扩展失败:', reloadErr);
+          }
           return new Response(
             JSON.stringify({ success: true, config: toFeishuConfigPublicView(c) }),
             { headers }

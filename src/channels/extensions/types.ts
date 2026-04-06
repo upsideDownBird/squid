@@ -26,10 +26,33 @@ export interface ChannelExtensionsFileConfig {
   /** 包含多个插件子目录的父路径 */
   roots?: string[];
   /**
-   * 仅加载列出的 id；缺省或 null 表示不限制（发现即尝试加载）。
-   * 空数组 [] 表示不加载任何扩展。
+   * 显式写出时：仅加载列表中的扩展 id（可配合 UI「启用」开关）。
+   * 若项目与用户配置均未包含 `enabled` 键，则视为未启用白名单，扫描到的扩展均可加载（兼容旧配置）。
    */
   enabled?: string[] | null;
+}
+
+/** 扫描发现的扩展（未 import，仅 manifest） */
+export interface DiscoveredChannelExtension {
+  id: string;
+  name: string;
+  version: string;
+}
+
+/** 渠道页展示的扩展目录项 */
+export interface ChannelExtensionCatalogEntry extends DiscoveredChannelExtension {
+  /** 在白名单中视为启用（未启用白名单时为 true） */
+  configEnabled: boolean;
+  /** 当前进程是否已动态加载 */
+  loaded: boolean;
+}
+
+/** 合并后的 channel-extensions 运行时视图 */
+export interface MergedChannelExtensionsRuntime {
+  roots: string[];
+  enabled?: string[];
+  /** 配置里是否显式出现过 enabled 键（决定是否为白名单模式） */
+  enabledExplicit: boolean;
 }
 
 export interface ChannelExtensionLoadError {
