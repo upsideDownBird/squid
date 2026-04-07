@@ -8,6 +8,11 @@ import { MemoryManager } from '../memory/manager';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { eventBridge } from '../channels/bridge/event-bridge';
 import { appendAgentLog, truncateText } from '../utils/agent-execution-log';
+import {
+  checkPlanModeToolInvocation,
+  getPlanModeSystemAppendix,
+  getToolsForTaskMode,
+} from './plan-mode-policy';
 
 /** 执行请求：模型 API Key 等凭证仅由 TaskExecutor 从 ~/.squid/config.json 读取，不由 Channel 传入 */
 export interface ExecuteRequest {
@@ -15,6 +20,8 @@ export interface ExecuteRequest {
   instruction: string;
   workspace: string;
   conversationHistory?: Message[];
+  /** 用于 Plan 模式计划文件路径：`.squid/plan-<id>.md` */
+  conversationId?: string;
 }
 
 export interface ExecuteResult {
@@ -70,6 +77,8 @@ export class TaskExecutor {
     toolName: string;
     rawArguments: string;
     workspace: string;
+    mode: TaskMode;
+    conversationId?: string;
   }): Promise<{ content: string; isError: boolean }> {
     const tool = this.toolRegistry.get(params.toolName);
     if (!tool) {
@@ -89,11 +98,26 @@ export class TaskExecutor {
       };
     }
 
+    if (params.mode === 'plan') {
+      const planCheck = checkPlanModeToolInvocation(
+        params.toolName,
+        args,
+        params.workspace,
+        params.conversationId
+      );
+      if (!planCheck.ok) {
+        return {
+          content: planCheck.message,
+          isError: true,
+        };
+      }
+    }
+
     try {
       const result = await tool.call(args, {
         workDir: params.workspace || process.cwd(),
         taskId: Date.now().toString(),
-        mode: 'ask'
+        mode: params.mode,
       });
 
       const { processToolResultBlock } = await import('../tools/tool-result-storage');
@@ -124,7 +148,9 @@ export class TaskExecutor {
   private async buildMessages(
     instruction: string,
     workspace: string,
-    history?: Message[]
+    history: Message[] | undefined,
+    mode: TaskMode,
+    conversationId?: string
   ) {
     // 加载记忆并注入到 system prompt
     let systemContent = '你是一个专业的 AI 助手，帮助用户完成各种任务。你能记住之前的对话内容。';
@@ -162,6 +188,10 @@ export class TaskExecutor {
       console.error('Failed to load skills for prompt context:', error);
     }
 
+    if (mode === 'plan') {
+      systemContent += getPlanModeSystemAppendix(workspace, conversationId);
+    }
+
     const messages: Array<{ role: string; content: string }> = [
       {
         role: 'system',
@@ -194,12 +224,20 @@ export class TaskExecutor {
     config: ModelConfig,
     instruction: string,
     workspace: string,
-    history?: Message[]
+    history: Message[] | undefined,
+    mode: TaskMode,
+    conversationId?: string
   ): Promise<string> {
     const endpoint = config.apiEndpoint || 'https://api.openai.com/v1';
-    const messages: Array<Record<string, any>> = await this.buildMessages(instruction, workspace, history);
+    const messages: Array<Record<string, any>> = await this.buildMessages(
+      instruction,
+      workspace,
+      history,
+      mode,
+      conversationId
+    );
 
-    const tools = this.toolRegistry.getAll();
+    const tools = getToolsForTaskMode(mode, this.toolRegistry);
     const toolsParam = tools.length > 0 ? tools.map(t => ({
       type: 'function',
       function: {
@@ -265,6 +303,8 @@ export class TaskExecutor {
           toolName,
           rawArguments,
           workspace,
+          mode,
+          conversationId,
         });
 
         messages.push({
@@ -283,14 +323,21 @@ export class TaskExecutor {
     instruction: string,
     history: Message[] | undefined,
     workspace: string,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
+    mode: TaskMode,
+    conversationId?: string
   ): Promise<void> {
     const endpoint = config.apiEndpoint || 'https://api.openai.com/v1';
-    const initialMessages = await this.buildMessages(instruction, workspace, history);
+    const initialMessages = await this.buildMessages(
+      instruction,
+      workspace,
+      history,
+      mode,
+      conversationId
+    );
     const messages: Array<Record<string, any>> = [...initialMessages];
 
-    // 获取所有注册的 tools
-    const tools = this.toolRegistry.getAll();
+    const tools = getToolsForTaskMode(mode, this.toolRegistry);
     console.log(`[Executor] 注册的工具数量: ${tools.length}`);
     console.log(`[Executor] 工具列表:`, tools.map(t => t.name).join(', '));
 
@@ -476,10 +523,24 @@ export class TaskExecutor {
           });
           onChunk(`\n🔧 调用工具: ${toolName}\n`);
 
+          if (mode === 'plan') {
+            const planCheck = checkPlanModeToolInvocation(toolName, args, workspace, conversationId);
+            if (!planCheck.ok) {
+              appendAgentLog('executor', 'warn', `Plan 模式拒绝工具: ${toolName}`);
+              onChunk(`\n❌ ${planCheck.message}\n`);
+              messages.push({
+                role: 'tool',
+                tool_call_id: toolUseId,
+                content: planCheck.message,
+              });
+              continue;
+            }
+          }
+
           const result = await tool.call(args, {
             workDir: workspace || process.cwd(),
             taskId: Date.now().toString(),
-            mode: 'ask'
+            mode,
           });
 
           const { processToolResultBlock } = await import('../tools/tool-result-storage');
@@ -538,8 +599,10 @@ export class TaskExecutor {
   private async callAnthropicAPI(
     config: ModelConfig,
     instruction: string,
-    workspace?: string,
-    history?: Message[]
+    workspace: string | undefined,
+    history: Message[] | undefined,
+    mode: TaskMode,
+    conversationId?: string
   ): Promise<string> {
     const endpoint = config.apiEndpoint || 'https://api.anthropic.com/v1';
 
@@ -564,8 +627,7 @@ export class TaskExecutor {
       content: instruction,
     });
 
-    // 获取所有注册的 tools
-    const tools = this.toolRegistry.getAll();
+    const tools = getToolsForTaskMode(mode, this.toolRegistry);
     const toolsParam = tools.length > 0 ? tools.map(t => ({
       name: t.name,
       description: t.description,
@@ -574,6 +636,14 @@ export class TaskExecutor {
 
     const maxToolRounds = 20;
     let finalText = '';
+
+    let anthropicSystem = `你是一个专业的 AI 助手，帮助用户完成各种任务。你能记住之前的对话内容。
+当前工作目录（必须遵守）: ${workspace || process.cwd()}
+所有需要文件系统/命令行的操作，都必须在该工作目录下执行。
+当执行 git clone 且用户没有指定目标目录时，必须显式指定目标路径到该工作目录下（例如：git clone <repo> "<工作目录>/<仓库名>"）。`;
+    if (mode === 'plan') {
+      anthropicSystem += getPlanModeSystemAppendix(workspace || process.cwd(), conversationId);
+    }
 
     for (let round = 0; round < maxToolRounds; round++) {
       const response = await fetch(`${endpoint}/messages`, {
@@ -587,10 +657,7 @@ export class TaskExecutor {
           model: config.modelName || 'claude-3-5-sonnet-20241022',
           max_tokens: config.maxTokens || 4096,
           temperature: config.temperature || 0.7,
-          system: `你是一个专业的 AI 助手，帮助用户完成各种任务。你能记住之前的对话内容。
-当前工作目录（必须遵守）: ${workspace || process.cwd()}
-所有需要文件系统/命令行的操作，都必须在该工作目录下执行。
-当执行 git clone 且用户没有指定目标目录时，必须显式指定目标路径到该工作目录下（例如：git clone <repo> "<工作目录>/<仓库名>"）。`,
+          system: anthropicSystem,
           messages,
           tools: toolsParam
         })
@@ -630,6 +697,8 @@ export class TaskExecutor {
           toolName,
           rawArguments,
           workspace: workspace || process.cwd(),
+          mode,
+          conversationId,
         });
 
         toolResults.push({
@@ -687,7 +756,9 @@ export class TaskExecutor {
           config,
           request.instruction,
           request.workspace,
-          request.conversationHistory
+          request.conversationHistory,
+          request.mode,
+          request.conversationId
         );
       } else if (config.provider === 'anthropic') {
         response = await this.callAnthropicAPI(
@@ -695,6 +766,8 @@ export class TaskExecutor {
           request.instruction,
           request.workspace,
           request.conversationHistory,
+          request.mode,
+          request.conversationId,
         );
       } else if (config.provider === 'custom') {
         // 自定义端点，根据协议类型选择
@@ -704,6 +777,8 @@ export class TaskExecutor {
             request.instruction,
             request.workspace,
             request.conversationHistory,
+            request.mode,
+            request.conversationId,
           );
         } else {
           // 默认使用 OpenAI 协议
@@ -711,7 +786,9 @@ export class TaskExecutor {
             config,
             request.instruction,
             request.workspace,
-            request.conversationHistory
+            request.conversationHistory,
+            request.mode,
+            request.conversationId
           );
         }
       } else {
@@ -795,7 +872,9 @@ export class TaskExecutor {
           request.instruction,
           request.conversationHistory,
           request.workspace,
-          onChunk
+          onChunk,
+          request.mode,
+          request.conversationId
         );
       } else if (config.provider === 'anthropic') {
         // Anthropic 使用非流式但支持工具调用
@@ -804,6 +883,8 @@ export class TaskExecutor {
           request.instruction,
           request.workspace,
           request.conversationHistory,
+          request.mode,
+          request.conversationId,
         );
         onChunk(response);
       } else if (config.provider === 'custom') {
@@ -814,6 +895,8 @@ export class TaskExecutor {
             request.instruction,
             request.workspace,
             request.conversationHistory,
+            request.mode,
+            request.conversationId,
           );
           onChunk(response);
         } else {
@@ -823,7 +906,9 @@ export class TaskExecutor {
             request.instruction,
             request.conversationHistory,
             request.workspace,
-            onChunk
+            onChunk,
+            request.mode,
+            request.conversationId
           );
         }
       } else {

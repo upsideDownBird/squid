@@ -5,7 +5,11 @@ import type { ToolResultBlockParam } from '@anthropic-ai/sdk/resources/index.mjs
 import { z } from 'zod';
 
 const FileEditInputSchema = z.object({
-  file_path: z.string().describe('要编辑的文件路径'),
+  file_path: z
+    .string()
+    .describe(
+      '要编辑的文件路径（相对工作区）。Plan 模式下通常仅允许编辑 .squid/plan*.md（以系统提示为准）。'
+    ),
   old_string: z.string().describe('要替换的旧字符串'),
   new_string: z.string().describe('替换后的新字符串'),
   replace_all: z.boolean().optional().describe('是否替换所有匹配项（默认 false）')

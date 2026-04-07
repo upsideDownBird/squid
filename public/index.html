@@ -1229,7 +1229,12 @@
               <select id="mode" class="option-btn">
                 <option value="ask">Ask</option>
                 <option value="craft">Craft</option>
-                <option value="plan">Plan</option>
+                <option
+                  value="plan"
+                  title="规划模式：仅可将计划写入工作区 .squid/plan.md（无会话）或 .squid/plan-会话后缀.md；修改业务代码请切换 Ask 或 Craft。"
+                >
+                  Plan
+                </option>
               </select>
               <input type="text" id="workspace" class="option-btn" placeholder="工作目录" value="/tmp/squid-test" style="width: 200px;">
               <button

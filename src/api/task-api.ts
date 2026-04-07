@@ -12,6 +12,7 @@ import type { MemoryCreateInput, MemoryUpdateInput } from '../memory/types';
 import { saveMemoryTool } from '../tools/save-memory';
 import { WebFetchTool } from '../tools/web-fetch';
 import { FileEditTool } from '../tools/file-edit';
+import { WriteFileTool } from '../tools/write-file';
 import { BashTool } from '../tools/bash';
 import { PowerShellTool } from '../tools/powershell';
 import { WebSearchTool } from '../tools/web-search';
@@ -26,6 +27,9 @@ import { CronListTool } from '../tools/cron-list';
 import { SkillTool } from '../tools/skill';
 import { BriefTool } from '../tools/brief';
 import { AgentTool } from '../tools/agent';
+import { ReadFileTool } from '../tools/read-file';
+import { GlobTool } from '../tools/glob';
+import { GrepTool } from '../tools/grep';
 import { TencentSkillHubClient } from '../skills/tencent-skillhub-client';
 import { installTencentSkillHubSkill } from '../skills/tencent-skillhub-installer';
 import { getTencentSkillHubInstallStatus, readTencentSkillHubLockfile } from '../skills/tencent-skillhub-metadata';
@@ -117,8 +121,12 @@ export class TaskAPI {
 
     // 注册 Tools
     this.toolRegistry.register(saveMemoryTool);
+    this.toolRegistry.register(ReadFileTool);
+    this.toolRegistry.register(GlobTool);
+    this.toolRegistry.register(GrepTool);
     this.toolRegistry.register(WebFetchTool);
     this.toolRegistry.register(FileEditTool);
+    this.toolRegistry.register(WriteFileTool);
     this.toolRegistry.register(BashTool);
     this.toolRegistry.register(PowerShellTool);
     this.toolRegistry.register(WebSearchTool);
@@ -757,10 +765,13 @@ user-invocable: true
         const sandbox = new WorkspaceSandbox(request.workspace);
         await sandbox.validatePath(request.workspace);
 
+        const planConversationId =
+          cid === '__squid_default_conversation__' ? undefined : cid;
         const result = await this.executor.execute({
           mode: request.mode,
           instruction: request.instruction,
           workspace: request.workspace,
+          conversationId: planConversationId,
         });
 
         const task = this.tasks.get(taskId);
@@ -913,12 +924,17 @@ user-invocable: true
 
         console.log('[LLM] TaskAPI → TaskExecutor.executeStream（模型凭证仅来自 ~/.squid/config.json）');
 
+        const executorConversationId =
+          conversationId === '__squid_default_conversation__'
+            ? undefined
+            : conversationId;
         await this.executor.executeStream(
           {
             mode: normalizedRequest.mode,
             instruction: normalizedRequest.instruction,
             workspace: normalizedRequest.workspace,
             conversationHistory,
+            conversationId: executorConversationId,
           },
           (chunk: string) => {
             fullResponse += chunk;
