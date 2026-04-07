@@ -5,8 +5,8 @@ export default {
     version: '0.1.0'
   },
   scripts: {
-    /** 生成 build/extension-node_modules，供 build.copy 打入 app（扩展动态 import 用） */
-    preBuild: 'bun scripts/copy-extension-npm-deps.ts'
+    /** 生成 build/extension-node_modules；Electrobun 以 `[bun 二进制, 本路径]` 执行，勿再写前缀 `bun`。 */
+    preBuild: 'scripts/copy-extension-npm-deps.ts'
   },
   build: {
     /**
