@@ -947,7 +947,7 @@ async function main() {
     console.error(
       '[squid] 未找到 UI：',
       htmlPath,
-      '（请确认 electrobun.config.js 的 build.copy 已包含 public 目录）'
+      '（请确认 electrobun.config.ts 的 build.copy 已包含 public 目录）'
     );
   }
   const htmlUrl = pathToFileURL(htmlPath).href;
