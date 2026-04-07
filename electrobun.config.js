@@ -24,5 +24,9 @@ export default {
     main: {
       entrypoint: './src/browser/index.html'
     }
+  },
+  /** CI / 本地 stable 打包：无更新源时不生成 bsdiff 补丁 */
+  release: {
+    generatePatch: false
   }
 };

@@ -9,6 +9,7 @@
     "dev:node": "tsx src/main.ts",
     "build": "tsc",
     "build:electron": "electrobun build",
+    "build:electron:release": "electrobun build --env=stable",
     "start": "node dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest",
